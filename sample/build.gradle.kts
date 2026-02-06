@@ -27,7 +27,6 @@ buildscript {
 
 plugins {
   id("com.android.application")
-  id("org.jetbrains.kotlin.android")
   id("com.slack.keeper")
 }
 
@@ -75,7 +74,7 @@ android {
     }
   }
 
-  flavorDimensionList.add("environment")
+  flavorDimensions += "environment"
   productFlavors {
     create("internal") {
       dimension = "environment"

@@ -399,8 +399,7 @@ private fun buildGradleFile(
   }
 
   plugins {
-    id 'com.android.application' version '8.4.0'
-    id 'org.jetbrains.kotlin.android' version '1.9.23'
+    id 'com.android.application' version '9.0.0'
     id 'com.slack.keeper'
   }
 
@@ -412,13 +411,13 @@ private fun buildGradleFile(
   tasks.withType(KotlinCompile).configureEach { compilerOptions { jvmTarget.set(JvmTarget.JVM_11) } }
 
   android {
-    compileSdkVersion 34
+    compileSdk = 36
     namespace "com.slack.keeper.sample"
 
     defaultConfig {
       applicationId "com.slack.keeper.sample"
-      minSdk 21
-      targetSdk 34
+      minSdk = 21
+      targetSdk = 36
     }
 
     compileOptions {
@@ -430,7 +429,7 @@ private fun buildGradleFile(
       release {
         minifyEnabled = true
         signingConfig = buildTypes.debug.signingConfig
-        proguardFiles getDefaultProguardFile('proguard-android.txt'), 'testconfiguration.pro'
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'testconfiguration.pro'
         testProguardFiles('proguard-test-rules.pro')
       }
       staging {

@@ -16,11 +16,10 @@
 
 plugins {
   id 'com.android.library'
-  id 'org.jetbrains.kotlin.android'
 }
 
 android {
-  compileSdk 34
+  compileSdk = 36
   namespace = "com.slack.keeper.sample.testonlyandroid"
 
   defaultConfig {
