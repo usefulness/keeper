@@ -17,7 +17,7 @@ package com.slack.keeper.sample
 
 /** AndroidTest file that uses the TestOnlyKotlinClass. */
 object TestOnlyKotlinClassCaller {
-  fun callTestOnlyMethod() {
-    TestOnlyKotlinClass.testOnlyMethod()
-  }
+    fun callTestOnlyMethod() {
+        TestOnlyKotlinClass.testOnlyMethod()
+    }
 }

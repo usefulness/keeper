@@ -18,8 +18,8 @@ package com.slack.keeper.example.c;
 import okio.ByteString;
 
 public class TestOnlyCClass {
-  public static void sampleMethod() {
-    ByteString byteString = ByteString.encodeUtf8("Hello TestOnlyC!");
-    System.out.println(byteString.hex());
-  }
+    public static void sampleMethod() {
+        ByteString byteString = ByteString.encodeUtf8("Hello TestOnlyC!");
+        System.out.println(byteString.hex());
+    }
 }

@@ -15,29 +15,29 @@
  */
 
 plugins {
-  id 'com.android.library'
+    id 'com.android.library'
 }
 
 android {
-  compileSdk = 36
-  namespace = "com.slack.keeper.sample.b"
+    compileSdk = 36
+    namespace = "com.slack.keeper.sample.b"
 
-  defaultConfig {
-    minSdk = 21
-  }
+    defaultConfig {
+        minSdk = 21
+    }
 
-  sourceSets {
-    main.java.srcDirs += 'src/main/kotlin'
-  }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
 }
 
 androidComponents {
-  beforeVariants(selector().all()) { variant ->
-    enable = variant.name == "release"
-  }
+    beforeVariants(selector().all()) { variant ->
+        enable = variant.name == "release"
+    }
 }
 
 dependencies {
-  implementation project(":sample-libraries:c")
-  implementation libs.okio
+    implementation project(":sample-libraries:c")
+    implementation libs.okio
 }

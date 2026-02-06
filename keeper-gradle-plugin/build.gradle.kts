@@ -96,6 +96,16 @@ if (project.hasProperty("skipJarVersion")) {
     }
 }
 
+tasks.register<WriteProperties>("generateVersionProperties") {
+    val propertiesFile = File(sourceSets.main.get().output.resourcesDir, "keeper-gradle-plugin.properties")
+    destinationFile = propertiesFile
+    property("keeper.r8_version", libs.versions.google.r8.get())
+}
+
+tasks.named("processResources") {
+    dependsOn("generateVersionProperties")
+}
+
 dependencies {
     compileOnly(libs.kgp.api)
     compileOnly(libs.kgp)

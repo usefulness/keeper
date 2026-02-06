@@ -87,7 +87,6 @@ public class KeeperPlugin : Plugin<Project> {
 
     internal companion object {
         const val INTERMEDIATES_DIR = "intermediates/keeper"
-        const val TRACE_REFERENCES_DEFAULT_VERSION = "8.2.38"
         const val CONFIGURATION_NAME = "keeperR8"
         private val MIN_GRADLE_VERSION = GradleVersion.version("8.0")
 
@@ -220,8 +219,9 @@ public class KeeperPlugin : Plugin<Project> {
                 isCanBeConsumed = false
                 isCanBeResolved = true
                 defaultDependencies {
-                    logger.debug("keeper r8 default version: $TRACE_REFERENCES_DEFAULT_VERSION")
-                    add(project.dependencies.create("com.android.tools:r8:$TRACE_REFERENCES_DEFAULT_VERSION"))
+                    val defaultR8Version = VersionProperties().r8Version()
+                    logger.debug("keeper r8 default version: $defaultR8Version")
+                    add(project.dependencies.create("com.android.tools:r8:$defaultR8Version"))
                 }
             }
 

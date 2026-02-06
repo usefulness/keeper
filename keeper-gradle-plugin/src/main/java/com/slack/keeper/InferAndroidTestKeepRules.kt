@@ -15,8 +15,6 @@
  */
 package com.slack.keeper
 
-import java.util.Locale
-import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.ConfigurableFileCollection
@@ -29,11 +27,15 @@ import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.process.ExecOperations
+import java.util.Locale
+import javax.inject.Inject
 
 /**
  * Generates proguard keep rules from the generated [androidTestSourceJar] and [appTargetJar] tasks,
@@ -47,22 +49,24 @@ import org.gradle.process.ExecOperations
  * This task's output is finally used as an input into the app variant's proguard transform task.
  */
 @CacheableTask
-public abstract class InferAndroidTestKeepRules
-@Inject
-constructor(private val execOps: ExecOperations) : DefaultTask() {
+public abstract class InferAndroidTestKeepRules @Inject constructor(private val execOps: ExecOperations) : DefaultTask() {
 
     init {
         group = KEEPER_TASK_GROUP
         description = "Infers keep rules based on target app APIs used from the androidTest classes"
     }
 
-    @get:Classpath public abstract val androidTestSourceJar: RegularFileProperty
+    @get:Classpath
+    public abstract val androidTestSourceJar: RegularFileProperty
 
-    @get:Classpath public abstract val appTargetJar: RegularFileProperty
+    @get:Classpath
+    public abstract val appTargetJar: RegularFileProperty
 
-    @get:Classpath public abstract val androidJar: RegularFileProperty
+    @get:Classpath
+    public abstract val androidJar: RegularFileProperty
 
-    @get:Classpath @get:Optional
+    @get:Classpath
+    @get:Optional
     public abstract val androidTestJar: RegularFileProperty
 
     /**
@@ -71,21 +75,30 @@ constructor(private val execOps: ExecOperations) : DefaultTask() {
      *
      * Example: `listOf("-Xdebug", "-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y")`
      */
-    @get:Input public abstract val jvmArgsProperty: ListProperty<String>
+    @get:Input
+    public abstract val jvmArgsProperty: ListProperty<String>
 
     /**
      * Enable more descriptive precondition checks in the CLI. If disabled, errors will be emitted to
      * the generated proguard rules file instead.
      */
-    @get:Input public abstract val enableAssertionsProperty: Property<Boolean>
+    @get:Input
+    public abstract val enableAssertionsProperty: Property<Boolean>
 
     /** @see TraceReferences.arguments */
-    @get:Input public abstract val traceReferencesArgs: ListProperty<String>
+    @get:Input
+    public abstract val traceReferencesArgs: ListProperty<String>
 
-    @get:Classpath @get:InputFiles
+    @get:Nested
+    public abstract val javaLauncher: Property<JavaLauncher>
+
+    @get:Classpath
+    @get:InputFiles
     public abstract val r8Program: ConfigurableFileCollection
 
-    @get:OutputFile public abstract val outputProguardRules: RegularFileProperty
+    @get:OutputFile
+    public abstract val outputProguardRules: RegularFileProperty
+
 
     @TaskAction
     internal fun exec() {
@@ -104,6 +117,9 @@ constructor(private val execOps: ExecOperations) : DefaultTask() {
         }
 
         execOps.javaexec {
+            if (javaLauncher.isPresent) {
+                executable = javaLauncher.get().executablePath.asFile.absolutePath
+            }
             classpath(r8Program)
             jvmArgs(inputJvmArgs)
             args(genTraceReferencesArgs())
@@ -161,11 +177,7 @@ constructor(private val execOps: ExecOperations) : DefaultTask() {
             jvmArgsProperty.set(extensionJvmArgs)
             this.traceReferencesArgs.set(traceReferencesArgs)
             outputProguardRules.set(
-                project.layout.buildDirectory.file(
-                    "${KeeperPlugin.INTERMEDIATES_DIR}/${
-                        variantName.capitalize(Locale.US)
-                    }/inferredKeepRules.pro",
-                ),
+                project.layout.buildDirectory.file("${KeeperPlugin.INTERMEDIATES_DIR}/${variantName.capitalize(Locale.US)}/inferredKeepRules.pro"),
             )
             r8Program.setFrom(r8Configuration)
             enableAssertionsProperty.set(enableAssertions)

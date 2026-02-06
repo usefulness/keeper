@@ -15,9 +15,11 @@
  */
 package com.slack.keeper.sample;
 
-/** AndroidTest file that uses the TestOnlyClass. */
+/**
+ * AndroidTest file that uses the TestOnlyClass.
+ */
 public class TestOnlyClassCaller {
-  public static void callTestOnlyMethod() {
-    TestOnlyClass.testOnlyMethod();
-  }
+    public static void callTestOnlyMethod() {
+        TestOnlyClass.testOnlyMethod();
+    }
 }

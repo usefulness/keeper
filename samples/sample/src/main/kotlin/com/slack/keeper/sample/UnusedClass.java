@@ -16,5 +16,6 @@
 package com.slack.keeper.sample;
 
 public class UnusedClass {
-  public static void unusedMethod() {}
+    public static void unusedMethod() {
+    }
 }

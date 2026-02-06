@@ -22,11 +22,11 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class KeeperSampleTest {
-  @Test
-  fun testFunctionKept() {
-    AClass.sampleMethod()
-    TestOnlyCClassCaller.callCClass()
-    TestOnlyClassCaller.callTestOnlyMethod()
-    TestOnlyKotlinClassCaller.callTestOnlyMethod()
-  }
+    @Test
+    fun testFunctionKept() {
+        AClass.sampleMethod()
+        TestOnlyCClassCaller.callCClass()
+        TestOnlyClassCaller.callTestOnlyMethod()
+        TestOnlyKotlinClassCaller.callTestOnlyMethod()
+    }
 }

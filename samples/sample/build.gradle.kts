@@ -19,181 +19,191 @@ import com.slack.keeper.InferAndroidTestKeepRules
 import com.slack.keeper.optInToKeeper
 
 buildscript {
-  dependencies {
-    // Truth has nice string comparison APIs and error messages
-    classpath(libs.truth)
-  }
+    dependencies {
+        // Truth has nice string comparison APIs and error messages
+        classpath(libs.truth)
+    }
 }
 
 plugins {
-  id("com.android.application")
-  id("com.slack.keeper")
+    id("com.android.application")
+    id("io.github.usefulness.keeper")
 }
 
 android {
-  compileSdk = 36
-  namespace = "com.slack.keeper.sample"
+    compileSdk = 36
+    namespace = "com.slack.keeper.sample"
 
-  defaultConfig {
-    applicationId = "com.slack.keeper.example"
-    minSdk = 21
-    targetSdk = 36
-    versionCode = 1
-    versionName = "1"
-    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    testApplicationId = "com.slack.keeper.sample.androidTest"
-  }
-
-  compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    isCoreLibraryDesugaringEnabled = true
-  }
-
-  // I know it looks like this shouldn't be necessary in the modern age of Kotlin Android
-  // development. But I assure you, it most certainly is. If you try to remove it, remember to check
-  // here if you see TestOnlyClass missing from proguard rules, as it's called from a Java file that
-  // is, somehow, protected by this block.
-  sourceSets {
-    maybeCreate("main").java.directories.add("src/main/kotlin")
-    maybeCreate("androidTest").java.directories.add("src/androidTest/kotlin")
-  }
-
-  buildTypes {
-    debug { matchingFallbacks += listOf("release") }
-    release {
-      isMinifyEnabled = true
-      signingConfig = signingConfigs.getByName("debug")
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard.pro")
-      testProguardFile("test-rules.pro")
-      matchingFallbacks += listOf("release")
-    }
-    create("staging") {
-      initWith(getByName("release"))
-      isDebuggable = true
-    }
-  }
-
-  flavorDimensions += "environment"
-  productFlavors {
-    create("internal") {
-      dimension = "environment"
-      applicationIdSuffix = ".internal"
-      versionNameSuffix = "-internal"
+    defaultConfig {
+        applicationId = "com.slack.keeper.example"
+        minSdk = 21
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testApplicationId = "com.slack.keeper.sample.androidTest"
     }
 
-    create("external") { dimension = "environment" }
-  }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
+    }
 
-  testBuildType = "staging"
+    // I know it looks like this shouldn't be necessary in the modern age of Kotlin Android
+    // development. But I assure you, it most certainly is. If you try to remove it, remember to check
+    // here if you see TestOnlyClass missing from proguard rules, as it's called from a Java file that
+    // is, somehow, protected by this block.
+    sourceSets {
+        maybeCreate("main").java.directories.add("src/main/kotlin")
+        maybeCreate("androidTest").java.directories.add("src/androidTest/kotlin")
+    }
+
+    buildTypes {
+        debug { matchingFallbacks += listOf("release") }
+        release {
+            isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard.pro")
+            testProguardFile("test-rules.pro")
+            matchingFallbacks += listOf("release")
+        }
+        create("staging") {
+            initWith(getByName("release"))
+            isDebuggable = true
+        }
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("internal") {
+            dimension = "environment"
+            applicationIdSuffix = ".internal"
+            versionNameSuffix = "-internal"
+        }
+
+        create("external") { dimension = "environment" }
+    }
+
+    testBuildType = "staging"
 }
 
 // Example: Only enable on "externalStaging"
 androidComponents {
-  beforeVariants { variantBuilder ->
-    if (variantBuilder.name == "externalStaging") {
-      variantBuilder.optInToKeeper()
+    beforeVariants { variantBuilder ->
+        if (variantBuilder.name == "externalStaging") {
+            variantBuilder.optInToKeeper()
+        }
     }
-  }
+}
+
+val maxVersionSupportedByR8 = JavaVersion.VERSION_21
+if (JavaVersion.current() > maxVersionSupportedByR8) {
+    tasks.withType<InferAndroidTestKeepRules>().configureEach {
+        javaLauncher.set(
+            javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(maxVersionSupportedByR8.majorVersion)
+            },
+        )
+    }
 }
 
 keeper {
-  // Example: emit extra debug information during Keeper's execution.
-  emitDebugInformation.set(true)
+    // Example: emit extra debug information during Keeper's execution.
+    emitDebugInformation.set(true)
 
-  // Example: automatic R8 repo management (more below)
-  automaticR8RepoManagement.set(false)
+    // Example: automatic R8 repo management (more below)
+    automaticR8RepoManagement.set(false)
 
-  // Uncomment this line to debug the R8 from a remote instance.
-  // r8JvmArgs.addAll(Arrays.asList("-Xdebug",
-  // "-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"))
+    // Uncomment this line to debug the R8 from a remote instance.
+    // r8JvmArgs.addAll(Arrays.asList("-Xdebug",
+    // "-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y"))
 
-  traceReferences {
-    // Don't fail the build if missing definitions are found.
-    arguments.set(listOf("--map-diagnostics:MissingDefinitionsDiagnostic", "error", "info"))
-  }
+    traceReferences {
+        // Don't fail the build if missing definitions are found.
+        arguments.set(listOf("--map-diagnostics:MissingDefinitionsDiagnostic", "error", "info"))
+    }
 }
 
-// To speed up testing, we can also eagerly check that the generated rules match what we expect.
-// This is _solely_ for CI use with Keeper!
-val isCi = providers.environmentVariable("CI").orElse("false").get() == "true"
-
-if (isCi) {
-  // TODO create a dependent lifecycle task
-  tasks.withType<InferAndroidTestKeepRules>().configureEach {
+// TODO create a dependent lifecycle task
+tasks.withType<InferAndroidTestKeepRules>().configureEach {
     val expectedFile = file("expectedRules.pro")
     doLast {
-      println("Checking expected rules")
-      val outputFile = outputProguardRules.asFile.get()
-      val outputRules = outputFile.readText().trim()
-      val expectedRules = expectedFile.readText().trim()
-      if (outputRules != expectedRules) {
-        System.err.println(
-          """
+        println("Checking expected rules")
+        val outputFile = outputProguardRules.asFile.get()
+        val outputRules = outputFile.readText().trim()
+        val expectedRules = expectedFile.readText().trim()
+        if (outputRules != expectedRules) {
+            System.err.println(
+                """
             Rules don't match expected
             Actual: file://$outputFile
             Expected: file://$expectedFile
           """
-            .trimIndent()
-        )
-        assertThat(outputRules).isEqualTo(expectedRules)
-      }
-    }
-  }
-
-  tasks.register("validateL8") {
-    dependsOn("l8DexDesugarLibExternalStaging")
-    val diagnosticFilePath =
-      "build/intermediates/keeper/l8-diagnostics/l8DexDesugarLibExternalStaging/patchedL8Rules.pro"
-    val diagnosticsFile = file(diagnosticFilePath)
-    doLast {
-      val diagnostics = diagnosticsFile.readText()
-      println("Checking expected input rules from diagnostics output")
-      if ("-keep class j\$.time.Instant" !in diagnostics) {
-        throw IllegalStateException(
-          "L8 diagnostic rules include the main variant's R8-generated rules, see $diagnosticFilePath"
-        )
-      }
-    }
-  }
-
-  tasks
-    .withType<R8Task>()
-    .matching { it.name == "minifyExternalStagingWithR8" }
-    .configureEach {
-      doLast {
-        println("Checking expected configuration contains embedded library rules from androidTest")
-        val output = getProguardConfigurationOutput()
-        val allConfigurations = output.get().readText()
-        logger.lifecycle("Verifying R8 configuration contents")
-        if ("-keep class slack.test.only.Android { *; }" !in allConfigurations) {
-          throw IllegalStateException(
-            "R8 configuration doesn't contain embedded library rules from androidTest. Full contents:\n$allConfigurations"
-          )
+                    .trimIndent(),
+            )
+            assertThat(outputRules).isEqualTo(expectedRules)
         }
-        if ("-keep class slack.test.only.Embedded { *; }" !in allConfigurations) {
-          throw IllegalStateException(
-            "R8 configuration doesn't contain embedded library rules from androidTest. Full contents:\n$allConfigurations"
-          )
-        }
-      }
     }
 }
 
+tasks.register("validateL8") {
+    dependsOn("l8DexDesugarLibExternalStaging")
+    val diagnosticFilePath =
+        "build/intermediates/keeper/l8-diagnostics/l8DexDesugarLibExternalStaging/patchedL8Rules.pro"
+    val diagnosticsFile = file(diagnosticFilePath)
+    doLast {
+        val diagnostics = diagnosticsFile.readText()
+        println("Checking expected input rules from diagnostics output")
+        if ("-keep class j\$.time.Instant" !in diagnostics) {
+            throw IllegalStateException(
+                "L8 diagnostic rules include the main variant's R8-generated rules, see $diagnosticFilePath",
+            )
+        }
+    }
+}
+
+tasks
+    .withType<R8Task>()
+    .matching { it.name == "minifyExternalStagingWithR8" }
+    .configureEach {
+        doLast {
+            println("Checking expected configuration contains embedded library rules from androidTest")
+            val output = getProguardConfigurationOutput()
+            val allConfigurations = output.get().readText()
+            logger.lifecycle("Verifying R8 configuration contents")
+            if ("-keep class slack.test.only.Android { *; }" !in allConfigurations) {
+                throw IllegalStateException(
+                    "R8 configuration doesn't contain embedded library rules from androidTest. Full contents:\n$allConfigurations",
+                )
+            }
+            if ("-keep class slack.test.only.Embedded { *; }" !in allConfigurations) {
+                throw IllegalStateException(
+                    "R8 configuration doesn't contain embedded library rules from androidTest. Full contents:\n$allConfigurations",
+                )
+            }
+        }
+    }
+tasks.check {
+    dependsOn("minifyExternalStagingWithR8")
+    dependsOn("validateL8")
+    dependsOn(tasks.withType<InferAndroidTestKeepRules>())
+}
+
 dependencies {
-  implementation(project(":sample-libraries:a"))
+    implementation(project(":sample-libraries:a"))
 
-  coreLibraryDesugaring(libs.desugarJdkLibs)
+    coreLibraryDesugaring(libs.desugarJdkLibs)
 
-  androidTestImplementation(project(":sample-libraries:c"))
-  androidTestImplementation(libs.okio)
-  androidTestImplementation(libs.androidx.annotation)
-  androidTestImplementation(libs.androidx.test.rules)
-  androidTestImplementation(libs.androidx.test.runner)
-  androidTestUtil(libs.androidx.test.orchestrator)
-  androidTestImplementation(libs.androidx.test.truth)
-  androidTestImplementation(libs.junit)
-  androidTestImplementation(libs.truth)
-  androidTestImplementation(project(":sample-libraries:test-only-android"))
-  androidTestImplementation(project(":sample-libraries:test-only-jvm"))
+    androidTestImplementation(project(":sample-libraries:c"))
+    androidTestImplementation(libs.okio)
+    androidTestImplementation(libs.androidx.annotation)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestUtil(libs.androidx.test.orchestrator)
+    androidTestImplementation(libs.androidx.test.truth)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.truth)
+    androidTestImplementation(project(":sample-libraries:test-only-android"))
+    androidTestImplementation(project(":sample-libraries:test-only-jvm"))
 }

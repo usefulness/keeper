@@ -15,35 +15,35 @@
  */
 
 plugins {
-  id 'com.android.library'
+    id 'com.android.library'
 }
 
 android {
-  compileSdk = 36
-  namespace = "com.slack.keeper.sample.a"
+    compileSdk = 36
+    namespace = "com.slack.keeper.sample.a"
 
-  defaultConfig {
-    minSdk = 21
-  }
+    defaultConfig {
+        minSdk = 21
+    }
 
-  sourceSets {
-    main.java.srcDirs += 'src/main/kotlin'
-  }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
 
-  compileOptions {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    coreLibraryDesugaringEnabled = true
-  }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+        coreLibraryDesugaringEnabled = true
+    }
 }
 
 androidComponents {
-  beforeVariants(selector().all()) { variant ->
-    enable = variant.name == "release"
-  }
+    beforeVariants(selector().all()) { variant ->
+        enable = variant.name == "release"
+    }
 }
 
 dependencies {
-  coreLibraryDesugaring libs.desugarJdkLibs
-  implementation project(":sample-libraries:b")
+    coreLibraryDesugaring libs.desugarJdkLibs
+    implementation project(":sample-libraries:b")
 }

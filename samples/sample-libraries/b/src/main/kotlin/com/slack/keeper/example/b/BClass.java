@@ -16,12 +16,13 @@
 package com.slack.keeper.example.b;
 
 import com.slack.keeper.example.c.CClass;
+
 import okio.ByteString;
 
 public class BClass {
-  public static void sampleMethod() {
-    CClass.sampleMethod();
-    ByteString byteString = ByteString.encodeUtf8("Hello B!");
-    System.out.println(byteString.hex());
-  }
+    public static void sampleMethod() {
+        CClass.sampleMethod();
+        ByteString byteString = ByteString.encodeUtf8("Hello B!");
+        System.out.println(byteString.hex());
+    }
 }

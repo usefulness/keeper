@@ -65,7 +65,7 @@ jobs:
         gradle: [ current, release-candidate ]
         java: [ 21, 25 ]
         agp: [ "8.5.0", stable, alpha ]
-    name: '[android] Gradle: ${{ matrix.gradle }}, Java: ${{ matrix.java }}, AGP: ${{ matrix.agp }}'
+    name: '[samples] Gradle: ${{ matrix.gradle }}, Java: ${{ matrix.java }}, AGP: ${{ matrix.agp }}'
     steps:
       - uses: actions/checkout@v6
         with:
