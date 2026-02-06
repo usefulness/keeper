@@ -111,7 +111,7 @@ constructor(private val execOps: ExecOperations) : DefaultTask() {
   }
 
   private fun genTraceReferencesArgs(): List<String?> =
-    listOf<Pair<String, String?>>(
+    listOf(
         "--keep-rules" to "",
         "--lib" to androidJar.get().asFile.absolutePath,
         "--lib" to androidTestJar.get().asFile.takeIf { it.exists() }?.absolutePath,
@@ -122,7 +122,7 @@ constructor(private val execOps: ExecOperations) : DefaultTask() {
       .map { if (it.second != null) listOf(it.first, it.second) else listOf() }
       .reduce { acc, any -> acc + any }
       // Add user provided args coming from TraceReferences.arguments after generated ones.
-      .plus(traceReferencesArgs.getOrElse(listOf()))
+      .plus(traceReferencesArgs.getOrElse(mutableListOf()))
 
   public companion object {
     @Suppress("LongParameterList")
