@@ -55,8 +55,8 @@ android {
   // here if you see TestOnlyClass missing from proguard rules, as it's called from a Java file that
   // is, somehow, protected by this block.
   sourceSets {
-    maybeCreate("main").java.srcDirs("src/main/kotlin")
-    maybeCreate("androidTest").java.srcDirs("src/androidTest/kotlin")
+    maybeCreate("main").java.directories.add("src/main/kotlin")
+    maybeCreate("androidTest").java.directories.add("src/androidTest/kotlin")
   }
 
   buildTypes {

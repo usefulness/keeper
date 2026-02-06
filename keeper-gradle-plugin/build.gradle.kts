@@ -29,13 +29,15 @@ plugins {
 // Reimplement kotlin-dsl's application of this function for nice DSLs
 samWithReceiver { annotation("org.gradle.api.HasImplicitReceiver") }
 
+val javaCompileVersion = JavaVersion.VERSION_25
+val javaTargetVersion = JavaVersion.VERSION_17
+
 tasks.withType<KotlinCompile>().configureEach {
   compilerOptions {
-    jvmTarget.set(JvmTarget.JVM_17) // Match AGP's requirement
+    jvmTarget.set(JvmTarget.fromTarget(javaTargetVersion.majorVersion)) // Match AGP's requirement
     // Because Gradle's Kotlin handling is stupid, this falls out of date quickly
-    apiVersion.set(KotlinVersion.KOTLIN_1_9)
-    languageVersion.set(KotlinVersion.KOTLIN_1_9)
-    //   freeCompilerArgs.add(listOf("-progressive"))
+    apiVersion.set(KotlinVersion.KOTLIN_2_0)
+    languageVersion.set(KotlinVersion.KOTLIN_2_0)
     // We use class SAM conversions because lambdas compiled into invokedynamic are not
     // Serializable, which causes accidental headaches with Gradle configuration caching. It's
     // easier for us to just use the previous anonymous classes behavior
@@ -63,9 +65,11 @@ sourceSets {
   getByName("test").resources.srcDirs(project.layout.buildDirectory.dir("pluginUnderTestMetadata"))
 }
 
-java { toolchain { languageVersion.set(JavaLanguageVersion.of(25)) } }
+java { toolchain { languageVersion.set(JavaLanguageVersion.of(javaCompileVersion.majorVersion)) } }
 
-tasks.withType<JavaCompile>().configureEach { options.release.set(17) }
+tasks.withType<JavaCompile>().configureEach {
+  options.release.set(javaTargetVersion.majorVersion.toInt())
+}
 
 gradlePlugin {
   plugins {
