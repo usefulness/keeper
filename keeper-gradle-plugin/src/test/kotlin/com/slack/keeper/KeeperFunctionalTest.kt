@@ -18,11 +18,6 @@ package com.slack.keeper
 import com.google.common.truth.Truth.assertThat
 import com.slack.keeper.KeeperPlugin.Companion.interpolateR8TaskName
 import com.squareup.javapoet.ClassName
-import com.squareup.kotlinpoet.ClassName as KpClassName
-import java.io.File
-import java.util.Locale
-import java.util.zip.ZipFile
-import javax.lang.model.element.Modifier.STATIC
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
@@ -31,6 +26,11 @@ import org.intellij.lang.annotations.Language
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
+import java.util.Locale
+import java.util.zip.ZipFile
+import javax.lang.model.element.Modifier.STATIC
+import com.squareup.kotlinpoet.ClassName as KpClassName
 
 /**
  * Testing gradle plugins is finicky. If you get errors when running from the IDE, try following
@@ -378,8 +378,7 @@ private fun buildGradleFile(
 ): String {
     val testVariant = "$testFlavor${testBuildType.capitalize(Locale.US)}"
 
-    @Suppress("UnnecessaryVariable")
-    @Language("groovy")
+    // language=groovy
     val buildScript =
         """
   import com.android.build.api.variant.VariantSelector
@@ -396,7 +395,7 @@ private fun buildGradleFile(
 
   plugins {
     id 'com.android.application' version '9.0.0'
-    id 'com.slack.keeper'
+    id 'io.github.usefulness.keeper'
   }
 
   // Ideally we use toolchains for a known version; this fails on windows w/WindowsRegistry access issues

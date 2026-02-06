@@ -39,13 +39,13 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - run: ./gradlew assemble -PskipJarVersion
+      - run: ./gradlew assemble
 
       - id: diffuse
         uses: usefulness/diffuse-action@master
         with:
           old-file-path: diffuse-base-file
-          new-file-path: android/build/libs/android.jar
+          new-file-path: keeper-gradle-plugin/build/libs/keeper-gradle-plugin.jar
 
       - uses: peter-evans/find-comment@v4
         id: find_comment

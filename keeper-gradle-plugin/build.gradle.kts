@@ -39,8 +39,6 @@ kotlin {
     }
 }
 
-
-
 tasks.withType<Test>().configureEach {
     beforeTest(closureOf<TestDescriptor> { logger.lifecycle("Running test: $this") })
     // Required to test configuration cache in tests when using withDebug()
@@ -57,10 +55,6 @@ tasks.withType<Test>().configureEach {
     )
 }
 
-sourceSets {
-    getByName("test").resources.srcDirs(project.layout.buildDirectory.dir("pluginUnderTestMetadata"))
-}
-
 gradlePlugin {
     plugins {
         plugins.create("keeper") {
@@ -70,7 +64,6 @@ gradlePlugin {
     }
 }
 
-
 dokka {
     dokkaPublications.configureEach {
         suppressInheritedMembers.set(true)
@@ -78,26 +71,29 @@ dokka {
     }
     dokkaSourceSets.configureEach {
         skipDeprecated.set(true)
-        externalDocumentationLinks.register("gradle-docs") {
-            url("https://docs.gradle.org/${gradle.gradleVersion}/javadoc/allpackages-index.html")
-        }
-        externalDocumentationLinks.register("android-gralde-plugin-docs") {
-            packageListUrl("https://developer.android.com/reference/tools/gradle-api/7.3/package-list")
-            url("https://developer.android.com/reference/tools/gradle-api/7.3/classes")
-        }
     }
 }
 
-// Fix missing implicit task dependency in Gradle's test kit
-tasks.named("processTestResources") { dependsOn("pluginUnderTestMetadata") }
+ktlint {
+    ktlintVersion = libs.versions.maven.ktlint.get()
+}
 
-val addTestPlugin: Configuration = configurations.create("addTestPlugin")
+val testRuntimeDependencies = configurations.register("testRuntimeDependencies") {
+    attributes {
+        // KGP publishes multiple variants https://kotlinlang.org/docs/whatsnew17.html#support-for-gradle-plugin-variants
+        attribute(Usage.USAGE_ATTRIBUTE, project.objects.named(Usage::class, Usage.JAVA_RUNTIME))
+        attribute(Category.CATEGORY_ATTRIBUTE, project.objects.named(Category::class, Category.LIBRARY))
+    }
+}
 
-configurations { testImplementation.get().extendsFrom(addTestPlugin) }
+tasks.withType<PluginUnderTestMetadata>().configureEach {
+    pluginClasspath.from(testRuntimeDependencies)
+}
 
-tasks.pluginUnderTestMetadata {
-    // make sure the test can access plugins for coordination.
-    pluginClasspath.from(addTestPlugin)
+if (project.hasProperty("skipJarVersion")) {
+    tasks.named<Jar>("jar") {
+        archiveVersion.set("")
+    }
 }
 
 dependencies {
@@ -105,10 +101,9 @@ dependencies {
     compileOnly(libs.kgp)
     compileOnly(libs.zipflinger)
     compileOnly(libs.agp)
-
-    addTestPlugin(libs.agp)
-    addTestPlugin(libs.kgp)
-    addTestPlugin(libs.kgp.api)
+    testRuntimeDependencies(libs.agp)
+    testRuntimeDependencies(libs.kgp)
+    testRuntimeDependencies(libs.kgp.api)
     testImplementation(libs.javapoet)
     testImplementation(libs.kotlinpoet)
     testImplementation(libs.truth)

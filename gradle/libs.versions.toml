@@ -7,6 +7,7 @@ java-compilation = "25"
 maven-vanniktech-publish = "0.35.0"
 maven-dokka = "2.1.0"
 gradle-pluginpublish = "2.0.0"
+maven-ktlint = "1.8.0"
 
 [libraries]
 androidx-annotation = "androidx.annotation:annotation:1.9.1"
@@ -26,6 +27,7 @@ truth = "com.google.truth:truth:1.4.5"
 zipflinger = { module = "com.android:zipflinger", version.ref = "agp" }
 vanniktech-maven-publish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "maven-vanniktech-publish" }
 jetbrains-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "maven-dokka" }
+ktlint-cli = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "maven-ktlint" }
 
 [plugins]
 agp-library = { id = "com.android.library", version.ref = "agp" }

@@ -59,7 +59,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - run: ./gradlew assemble -PskipJarVersion
+      - run: ./gradlew assemble
 
       - name: Upload diffuse base artifact
         uses: actions/cache@v5
@@ -68,5 +68,5 @@ jobs:
           key: diffuse-${{ github.sha }}
 
       - name: Copy diffuse base artifact to be picked by cache save
-        run: cp android/build/libs/android.jar diffuse-base-file
+        run: cp keeper-gradle-plugin/build/libs/keeper-gradle-plugin.jar diffuse-base-file
         shell: bash
