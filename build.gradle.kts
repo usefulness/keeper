@@ -19,6 +19,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  */
 
 plugins {
+    alias(libs.plugins.starter.config)
+    alias(libs.plugins.starter.versioning)
     alias(libs.plugins.agp.library) apply false
     alias(libs.plugins.starter.library.kotlin) apply false
     // Version just here to make gradle happy. It's always substituted as an included build

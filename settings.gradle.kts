@@ -1,9 +1,9 @@
 pluginManagement {
-  repositories {
-    mavenCentral()
-    google()
-    gradlePluginPortal()
-  }
+    repositories {
+        mavenCentral()
+        google()
+        gradlePluginPortal()
+    }
 }
 
 plugins {
@@ -20,4 +20,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "io.github.usefulness"
 
+includeBuild("gradle/plugins")
 include(":keeper-gradle-plugin")

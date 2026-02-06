@@ -14,31 +14,32 @@
  * limitations under the License.
  */
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `java-gradle-plugin`
     alias(libs.plugins.starter.library.kotlin)
-    alias(libs.plugins.dokka)
-    alias(libs.plugins.mavenPublish)
     alias(libs.plugins.binaryCompatibilityValidator)
-    id("org.jetbrains.kotlin.plugin.sam.with.receiver") version libs.versions.kotlin.get()
+    id("org.jetbrains.kotlin.plugin.sam.with.receiver") version libs.versions.maven.kotlin.get()
+    alias(libs.plugins.gradle.pluginpublish)
+    id("com.starter.publishing")
 }
 
 samWithReceiver {
     annotation("org.gradle.api.HasImplicitReceiver")
 }
 
-val javaCompileVersion = JavaVersion.VERSION_25
-val javaTargetVersion = JavaVersion.VERSION_17
-
-tasks.withType<KotlinCompile>().configureEach {
+kotlin {
+    explicitApi()
+    jvmToolchain(25)
+    jvmToolchain(libs.versions.java.compilation.get().toInt())
     compilerOptions {
-        apiVersion.set(KotlinVersion.KOTLIN_2_0)
-        languageVersion.set(KotlinVersion.KOTLIN_2_0)
+        apiVersion = KotlinVersion.KOTLIN_2_0
+        languageVersion = KotlinVersion.KOTLIN_2_0
         freeCompilerArgs.add("-Xsam-conversions=class")
     }
 }
+
+
 
 tasks.withType<Test>().configureEach {
     beforeTest(closureOf<TestDescriptor> { logger.lifecycle("Running test: $this") })
@@ -60,15 +61,10 @@ sourceSets {
     getByName("test").resources.srcDirs(project.layout.buildDirectory.dir("pluginUnderTestMetadata"))
 }
 
-kotlin {
-    explicitApi()
-    jvmToolchain(25)
-}
-
 gradlePlugin {
     plugins {
         plugins.create("keeper") {
-            id = "com.slack.keeper"
+            id = "io.github.usefulness.keeper"
             implementationClass = "com.slack.keeper.KeeperPlugin"
         }
     }
@@ -90,11 +86,6 @@ dokka {
             url("https://developer.android.com/reference/tools/gradle-api/7.3/classes")
         }
     }
-}
-
-mavenPublishing {
-    publishToMavenCentral(automaticRelease = true)
-    signAllPublications()
 }
 
 // Fix missing implicit task dependency in Gradle's test kit
