@@ -109,9 +109,9 @@ tasks.named("processResources") {
 dependencies {
     compileOnly(libs.kgp.api)
     compileOnly(libs.zipflinger)
-    compileOnly(libs.agp)
-    testRuntimeDependencies(libs.agp)
-    testRuntimeDependencies(libs.kgp)
+    compileOnly(libs.agp.impl)
+    testRuntimeDependencies(libs.agp.impl)
+    testRuntimeDependencies(libs.kgp.impl)
     testImplementation(libs.javapoet)
     testImplementation(libs.kotlinpoet)
     testImplementation(libs.truth)
