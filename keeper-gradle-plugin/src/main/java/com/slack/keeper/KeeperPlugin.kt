@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@file:Suppress("UnstableApiUsage", "DEPRECATION")
-
 package com.slack.keeper
 
 import com.android.build.api.artifact.ScopedArtifact
@@ -28,9 +26,6 @@ import com.android.build.gradle.internal.publishing.AndroidArtifacts
 import com.android.build.gradle.internal.publishing.AndroidArtifacts.ArtifactType
 import com.android.build.gradle.internal.tasks.L8DexDesugarLibTask
 import com.android.build.gradle.internal.tasks.R8Task
-import java.io.File
-import java.io.IOException
-import java.util.Locale
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -44,7 +39,8 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.util.GradleVersion
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
+import java.io.IOException
 
 internal const val TAG = "Keeper"
 internal const val KEEPER_TASK_GROUP = "keeper"
@@ -69,7 +65,7 @@ internal const val KEEPER_TASK_GROUP = "keeper"
  * - Create a custom `r8` configuration for the R8 dependency.
  * - Register two jar tasks. One for all the classes in its target `testedVariant` and one for all
  *   the classes in the androidTest variant itself. This will use their variant-provided
- *   [JavaCompile] tasks and [KotlinCompile] tasks if available.
+ *   [JavaCompile] tasks and [org.jetbrains.kotlin.gradle.tasks.KotlinCompile] tasks if available.
  * - Register a [`infer${androidTestVariant}UsageForKeeper`][InferAndroidTestKeepRules] task that
  *   plugs the two aforementioned jars into R8's `TraceReferences` CLI and outputs the inferred
  *   proguard rules into a new intermediate .pro file.
@@ -90,9 +86,9 @@ public class KeeperPlugin : Plugin<Project> {
         const val CONFIGURATION_NAME = "keeperR8"
         private val MIN_GRADLE_VERSION = GradleVersion.version("8.0")
 
-        fun interpolateR8TaskName(variantName: String): String = "minify${variantName.capitalize(Locale.US)}WithR8"
+        fun interpolateR8TaskName(variantName: String): String = "minify${variantName.replaceFirstChar(Char::uppercase)}WithR8"
 
-        fun interpolateL8TaskName(variantName: String): String = "l8DexDesugarLib${variantName.capitalize(Locale.US)}"
+        fun interpolateL8TaskName(variantName: String): String = "l8DexDesugarLib${variantName.replaceFirstChar(Char::uppercase)}"
     }
 
     override fun apply(project: Project) {
@@ -215,6 +211,7 @@ public class KeeperPlugin : Plugin<Project> {
         val r8Configuration =
             configurations.create(CONFIGURATION_NAME) {
                 description = "R8 dependencies for Keeper. This is used solely for the TraceReferences CLI"
+                @Suppress("DEPRECATION")
                 isVisible = false
                 isCanBeConsumed = false
                 isCanBeResolved = true
@@ -265,7 +262,7 @@ public class KeeperPlugin : Plugin<Project> {
                 )
             val inferAndroidTestUsageProvider =
                 tasks.register(
-                    "infer${testVariant.name.capitalize(Locale.US)}KeepRulesForKeeper",
+                    "infer${testVariant.name.replaceFirstChar(Char::uppercase)}KeepRulesForKeeper",
                     InferAndroidTestKeepRules::class.java,
                     InferAndroidTestKeepRules(
                         variantName = testVariant.name,
@@ -321,6 +318,7 @@ public class KeeperPlugin : Plugin<Project> {
             // Look for our marker extension
             appVariant.getExtension(KeeperVariantMarker::class.java) ?: return@onVariants
             appVariant.androidTest?.let { testVariant ->
+                @Suppress("UnstableApiUsage")
                 if (verifyMinification && !appVariant.isMinifyEnabled) {
                     project.logger.error(
                         """
@@ -355,7 +353,7 @@ public class KeeperPlugin : Plugin<Project> {
     ): TaskProvider<out AndroidTestVariantClasspathJar> {
         val taskProvider =
             tasks.register(
-                "jar${testVariant.name.capitalize(Locale.US)}ClassesForKeeper",
+                "jar${testVariant.name.replaceFirstChar(Char::uppercase)}ClassesForKeeper",
                 AndroidTestVariantClasspathJar::class.java,
             ) {
                 this.emitDebugInfo.value(emitDebugInfo)
@@ -389,7 +387,7 @@ public class KeeperPlugin : Plugin<Project> {
     ): TaskProvider<out VariantClasspathJar> {
         val taskProvider =
             tasks.register(
-                "jar${appVariant.name.capitalize(Locale.US)}ClassesForKeeper",
+                "jar${appVariant.name.replaceFirstChar(Char::uppercase)}ClassesForKeeper",
                 VariantClasspathJar::class.java,
             ) {
                 this.emitDebugInfo.set(emitDebugInfo)
@@ -413,25 +411,6 @@ private fun Configuration.artifactView(artifactType: ArtifactType): FileCollecti
     .artifacts
     .artifactFiles
 
-/** Copy of the stdlib version until it's stable. */
-internal fun String.capitalize(locale: Locale): String {
-    if (isNotEmpty()) {
-        val firstChar = this[0]
-        if (firstChar.isLowerCase()) {
-            return buildString {
-                val titleChar = firstChar.toTitleCase()
-                if (titleChar != firstChar.toUpperCase()) {
-                    append(titleChar)
-                } else {
-                    append(this@capitalize.substring(0, 1).toUpperCase(locale))
-                }
-                append(this@capitalize.substring(1))
-            }
-        }
-    }
-    return this
-}
-
 /**
  * Similar to [TaskContainer.named], but waits until the task is registered if it doesn't exist,
  * yet. If the task is never registered, then this method will throw an error after the
@@ -441,7 +420,7 @@ private inline fun <reified T : Task> Project.namedLazy(targetName: String, cros
     try {
         action(tasks.named(targetName, T::class.java))
         return
-    } catch (ignored: UnknownTaskException) {}
+    } catch (_: UnknownTaskException) {}
 
     var didRun = false
 

@@ -10,6 +10,7 @@ maven-ktlint = "1.8.0"
 google-r8 = "9.0.32"
 
 [libraries]
+agp-api = { module = "com.android.tools.build:gradle-api", version.ref = "google-agp" }
 agp = { module = "com.android.tools.build:gradle", version.ref = "google-agp" }
 r8 = { module = "com.android.tools:r8", version.ref = "google-r8" }
 javapoet = "com.squareup:javapoet:1.13.0"

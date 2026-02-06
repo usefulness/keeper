@@ -15,6 +15,7 @@
  */
 package com.slack.keeper
 
+import com.slack.keeper.KeeperPlugin.Companion.INTERMEDIATES_DIR
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.ConfigurableFileCollection
@@ -34,7 +35,6 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.process.ExecOperations
-import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -98,7 +98,6 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
 
     @get:OutputFile
     public abstract val outputProguardRules: RegularFileProperty
-
 
     @TaskAction
     internal fun exec() {
@@ -176,9 +175,8 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
             this.androidTestJar.set(androidTestJar)
             jvmArgsProperty.set(extensionJvmArgs)
             this.traceReferencesArgs.set(traceReferencesArgs)
-            outputProguardRules.set(
-                project.layout.buildDirectory.file("${KeeperPlugin.INTERMEDIATES_DIR}/${variantName.capitalize(Locale.US)}/inferredKeepRules.pro"),
-            )
+            val inferredRulesPath = "$INTERMEDIATES_DIR/${variantName.replaceFirstChar(Char::uppercase)}/inferredKeepRules.pro"
+            outputProguardRules.set(project.layout.buildDirectory.file(inferredRulesPath))
             r8Program.setFrom(r8Configuration)
             enableAssertionsProperty.set(enableAssertions)
         }
