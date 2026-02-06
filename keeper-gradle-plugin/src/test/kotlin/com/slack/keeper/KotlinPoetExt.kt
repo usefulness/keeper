@@ -20,22 +20,16 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.TypeSpec
 import java.io.File
 
-internal fun kotlinFile(
-  packageName: String,
-  className: String,
-  body: TypeSpec.Builder.() -> Unit,
-): SourceFile {
-  return FileSpec.get(
-      packageName = packageName,
-      typeSpec = TypeSpec.objectBuilder(className).apply(body).build(),
-    )
+internal fun kotlinFile(packageName: String, className: String, body: TypeSpec.Builder.() -> Unit): SourceFile = FileSpec.get(
+    packageName = packageName,
+    typeSpec = TypeSpec.objectBuilder(className).apply(body).build(),
+)
     .asSourceFile()
-}
 
 internal fun TypeSpec.Builder.funSpec(name: String, body: FunSpec.Builder.() -> Unit) {
-  addFunction(FunSpec.builder(name).apply(body).build())
+    addFunction(FunSpec.builder(name).apply(body).build())
 }
 
 internal operator fun File.plusAssign(fileSpec: FileSpec) {
-  fileSpec.writeTo(this)
+    fileSpec.writeTo(this)
 }

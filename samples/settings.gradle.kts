@@ -55,7 +55,7 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "keeper-root"
+rootProject.name = "keeper-samples"
 
 include(":sample")
 

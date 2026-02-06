@@ -13,95 +13,88 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  kotlin("jvm") version libs.versions.kotlin.get()
-  `java-gradle-plugin`
-  alias(libs.plugins.dokka)
-  alias(libs.plugins.mavenPublish)
-  alias(libs.plugins.binaryCompatibilityValidator)
-  id("org.jetbrains.kotlin.plugin.sam.with.receiver") version libs.versions.kotlin.get()
+    `java-gradle-plugin`
+    alias(libs.plugins.starter.library.kotlin)
+    alias(libs.plugins.dokka)
+    alias(libs.plugins.mavenPublish)
+    alias(libs.plugins.binaryCompatibilityValidator)
+    id("org.jetbrains.kotlin.plugin.sam.with.receiver") version libs.versions.kotlin.get()
 }
 
-// Reimplement kotlin-dsl's application of this function for nice DSLs
-samWithReceiver { annotation("org.gradle.api.HasImplicitReceiver") }
+samWithReceiver {
+    annotation("org.gradle.api.HasImplicitReceiver")
+}
 
 val javaCompileVersion = JavaVersion.VERSION_25
 val javaTargetVersion = JavaVersion.VERSION_17
 
 tasks.withType<KotlinCompile>().configureEach {
-  compilerOptions {
-    jvmTarget.set(JvmTarget.fromTarget(javaTargetVersion.majorVersion)) // Match AGP's requirement
-    // Because Gradle's Kotlin handling is stupid, this falls out of date quickly
-    apiVersion.set(KotlinVersion.KOTLIN_2_0)
-    languageVersion.set(KotlinVersion.KOTLIN_2_0)
-    // We use class SAM conversions because lambdas compiled into invokedynamic are not
-    // Serializable, which causes accidental headaches with Gradle configuration caching. It's
-    // easier for us to just use the previous anonymous classes behavior
-    freeCompilerArgs.add("-Xsam-conversions=class")
-  }
+    compilerOptions {
+        apiVersion.set(KotlinVersion.KOTLIN_2_0)
+        languageVersion.set(KotlinVersion.KOTLIN_2_0)
+        freeCompilerArgs.add("-Xsam-conversions=class")
+    }
 }
 
 tasks.withType<Test>().configureEach {
-  beforeTest(closureOf<TestDescriptor> { logger.lifecycle("Running test: $this") })
-  // Required to test configuration cache in tests when using withDebug()
-  // https://github.com/gradle/gradle/issues/22765#issuecomment-1339427241
-  jvmArgs(
-    "--add-opens",
-    "java.base/java.util=ALL-UNNAMED",
-    "--add-opens",
-    "java.base/java.util.concurrent.atomic=ALL-UNNAMED",
-    "--add-opens",
-    "java.base/java.lang.invoke=ALL-UNNAMED",
-    "--add-opens",
-    "java.base/java.net=ALL-UNNAMED",
-  )
+    beforeTest(closureOf<TestDescriptor> { logger.lifecycle("Running test: $this") })
+    // Required to test configuration cache in tests when using withDebug()
+    // https://github.com/gradle/gradle/issues/22765#issuecomment-1339427241
+    jvmArgs(
+        "--add-opens",
+        "java.base/java.util=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/java.lang.invoke=ALL-UNNAMED",
+        "--add-opens",
+        "java.base/java.net=ALL-UNNAMED",
+    )
 }
 
 sourceSets {
-  getByName("test").resources.srcDirs(project.layout.buildDirectory.dir("pluginUnderTestMetadata"))
+    getByName("test").resources.srcDirs(project.layout.buildDirectory.dir("pluginUnderTestMetadata"))
 }
 
-java { toolchain { languageVersion.set(JavaLanguageVersion.of(javaCompileVersion.majorVersion)) } }
-
-tasks.withType<JavaCompile>().configureEach {
-  options.release.set(javaTargetVersion.majorVersion.toInt())
+kotlin {
+    explicitApi()
+    jvmToolchain(25)
 }
 
 gradlePlugin {
-  plugins {
-    plugins.create("keeper") {
-      id = "com.slack.keeper"
-      implementationClass = "com.slack.keeper.KeeperPlugin"
+    plugins {
+        plugins.create("keeper") {
+            id = "com.slack.keeper"
+            implementationClass = "com.slack.keeper.KeeperPlugin"
+        }
     }
-  }
 }
 
-kotlin { explicitApi() }
 
 dokka {
-  dokkaPublications.configureEach {
-    suppressInheritedMembers.set(true)
-    outputDirectory.set(rootDir.resolve("../docs/0.x"))
-  }
-  dokkaSourceSets.configureEach {
-    skipDeprecated.set(true)
-    externalDocumentationLinks.register("gradle-docs") {
-      url("https://docs.gradle.org/${gradle.gradleVersion}/javadoc/allpackages-index.html")
+    dokkaPublications.configureEach {
+        suppressInheritedMembers.set(true)
+        outputDirectory.set(rootDir.resolve("../docs/0.x"))
     }
-    externalDocumentationLinks.register("android-gralde-plugin-docs") {
-      packageListUrl("https://developer.android.com/reference/tools/gradle-api/7.3/package-list")
-      url("https://developer.android.com/reference/tools/gradle-api/7.3/classes")
+    dokkaSourceSets.configureEach {
+        skipDeprecated.set(true)
+        externalDocumentationLinks.register("gradle-docs") {
+            url("https://docs.gradle.org/${gradle.gradleVersion}/javadoc/allpackages-index.html")
+        }
+        externalDocumentationLinks.register("android-gralde-plugin-docs") {
+            packageListUrl("https://developer.android.com/reference/tools/gradle-api/7.3/package-list")
+            url("https://developer.android.com/reference/tools/gradle-api/7.3/classes")
+        }
     }
-  }
 }
 
 mavenPublishing {
-  publishToMavenCentral(automaticRelease = true)
-  signAllPublications()
+    publishToMavenCentral(automaticRelease = true)
+    signAllPublications()
 }
 
 // Fix missing implicit task dependency in Gradle's test kit
@@ -112,21 +105,21 @@ val addTestPlugin: Configuration = configurations.create("addTestPlugin")
 configurations { testImplementation.get().extendsFrom(addTestPlugin) }
 
 tasks.pluginUnderTestMetadata {
-  // make sure the test can access plugins for coordination.
-  pluginClasspath.from(addTestPlugin)
+    // make sure the test can access plugins for coordination.
+    pluginClasspath.from(addTestPlugin)
 }
 
 dependencies {
-  compileOnly(libs.kgp.api)
-  compileOnly(libs.kgp)
-  compileOnly(libs.zipflinger)
-  compileOnly(libs.agp)
+    compileOnly(libs.kgp.api)
+    compileOnly(libs.kgp)
+    compileOnly(libs.zipflinger)
+    compileOnly(libs.agp)
 
-  addTestPlugin(libs.agp)
-  addTestPlugin(libs.kgp)
-  addTestPlugin(libs.kgp.api)
-  testImplementation(libs.javapoet)
-  testImplementation(libs.kotlinpoet)
-  testImplementation(libs.truth)
-  testImplementation(libs.junit)
+    addTestPlugin(libs.agp)
+    addTestPlugin(libs.kgp)
+    addTestPlugin(libs.kgp.api)
+    testImplementation(libs.javapoet)
+    testImplementation(libs.kotlinpoet)
+    testImplementation(libs.truth)
+    testImplementation(libs.junit)
 }
