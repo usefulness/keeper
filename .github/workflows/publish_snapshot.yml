@@ -59,7 +59,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - run: ./gradlew assemble
+      - run: ./gradlew assemble -PskipJarVersion
 
       - name: Upload diffuse base artifact
         uses: actions/cache@v5
