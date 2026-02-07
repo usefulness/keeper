@@ -90,6 +90,7 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
     public abstract val traceReferencesArgs: ListProperty<String>
 
     @get:Nested
+    @get:Optional
     public abstract val javaLauncher: Property<JavaLauncher>
 
     @get:Classpath

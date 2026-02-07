@@ -65,7 +65,7 @@ internal const val KEEPER_TASK_GROUP = "keeper"
  * - Create a custom `r8` configuration for the R8 dependency.
  * - Register two jar tasks. One for all the classes in its target `testedVariant` and one for all
  *   the classes in the androidTest variant itself. This will use their variant-provided
- *   [JavaCompile] tasks and [org.jetbrains.kotlin.gradle.tasks.KotlinCompile] tasks if available.
+ *   [JavaCompile] tasks and [org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask] tasks if available.
  * - Register a [`infer${androidTestVariant}UsageForKeeper`][InferAndroidTestKeepRules] task that
  *   plugs the two aforementioned jars into R8's `TraceReferences` CLI and outputs the inferred
  *   proguard rules into a new intermediate .pro file.

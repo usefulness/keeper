@@ -96,9 +96,9 @@ internal class KeeperFunctionalTest {
         val result = projectDir.runAsWiredStaging()
 
         // Ensure the expected parameterized minifiers ran
-        assertThat(result.resultOf(interpolateR8TaskName("ExternalStaging")))
+        assertThat(result.resultOf(interpolateR8TaskName("externalStaging")))
             .isEqualTo(TaskOutcome.SUCCESS)
-        assertThat(result.resultOf(interpolateR8TaskName("ExternalStagingAndroidTest")))
+        assertThat(result.resultOf(interpolateR8TaskName("externalStagingAndroidTest")))
             .isEqualTo(TaskOutcome.SUCCESS)
 
         // Assert we correctly packaged app classes
@@ -115,7 +115,7 @@ internal class KeeperFunctionalTest {
 
         // Assert we correctly generated rules
         val generatedRules =
-            projectDir.generatedChild("ExternalStagingAndroidTest/inferredKeepRules.pro")
+            projectDir.generatedChild("externalStagingAndroidTest/inferredKeepRules.pro")
         assertThat(generatedRules.readText().trim())
             .isEqualTo(
                 EXPECTED_TRACE_REFERENCES_CONFIG.map { indentRules(it.key, it.value) }
@@ -207,8 +207,7 @@ internal class KeeperFunctionalTest {
                 testBuildType = "staging",
                 testFlavor = "external",
                 emitDebugInformation = true,
-                extraDependencies =
-                mapOf(
+                extraDependencies = mapOf(
                     "implementation" to "\"org.threeten:threetenbp:1.4.0:no-tzdb\"",
                     "androidTestImplementation" to "\"org.threeten:threetenbp:1.4.0\"",
                 ),
@@ -276,17 +275,28 @@ private fun String.prefixIfNot(prefix: String) = if (this.startsWith(prefix)) th
 
 private val EXPECTED_TRACE_REFERENCES_CONFIG: Map<String, List<String>?> =
     mapOf(
-        "-keep class com.slack.keeper.sample.TestOnlyClass" to
-            listOf("public static void testOnlyMethod();"),
-        "-keep class com.slack.keeper.sample.TestOnlyKotlinClass" to
-            listOf(
-                "public void testOnlyMethod();",
-                "com.slack.keeper.sample.TestOnlyKotlinClass INSTANCE;",
-            ),
+        "-keep class com.slack.keeper.sample.TestOnlyClass" to listOf(
+            "public static void testOnlyMethod();",
+        ),
+        "-keep class com.slack.keeper.sample.TestOnlyKotlinClass" to listOf(
+            "public void testOnlyMethod();",
+            "com.slack.keeper.sample.TestOnlyKotlinClass INSTANCE;",
+        ),
+        "-keep @interface kotlin.Metadata" to listOf(
+            "public java.lang.String[] d1();",
+            "public java.lang.String[] d2();",
+            "public int k();",
+            "public int[] mv();",
+            "public int xi();",
+        ),
+        "-keep class kotlin.Unit" to null,
+        "-keep @interface org.jetbrains.annotations.NotNull" to null,
     )
 
 private fun indentRules(header: String, content: List<String>?) = if (content == null) {
-    header
+    "$header {" +
+        System.lineSeparator() +
+        "}"
 } else {
     "$header {" +
         System.lineSeparator() +
