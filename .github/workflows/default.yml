@@ -57,9 +57,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gradle: [ current, release-candidate ]
+        gradle: [ current ]
         java: [ 25 ]
-        agp: [ stable, alpha ]
+        agp: [ stable, beta, alpha ]
         include:
           - gradle: current
             java: 21
@@ -67,6 +67,9 @@ jobs:
           - gradle: current
             java: 21
             agp: "8.5.0"
+          - gradle: release-candidate
+            java: 25
+            agp: alpha
     name: '[samples] Gradle: ${{ matrix.gradle }}, Java: ${{ matrix.java }}, AGP: ${{ matrix.agp }}'
     steps:
       - uses: actions/checkout@v6

@@ -15,6 +15,7 @@
  */
 package com.slack.keeper
 
+import com.android.build.api.AndroidPluginVersion
 import com.android.build.api.artifact.ScopedArtifact
 import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.variant.AndroidTest
@@ -145,13 +146,14 @@ public class KeeperPlugin : Plugin<Project> {
                 val appL8TaskName = interpolateL8TaskName(appVariant.name)
 
                 val appTask = project.tasks.named { it == appL8TaskName }.withType(L8DexDesugarLibTask::class.java)
-
-                project.tasks.named { it == testL8TaskName }.withType(L8DexDesugarLibTask::class.java).configureEach {
-                    dependsOn(appL8TaskName)
-                    appTask.getByName(appL8TaskName).keepRulesConfigurations.set(keepRules.asFile.map { it.readLines() })
-                }
+                val testTask = project.tasks.named { it == testL8TaskName }.withType(L8DexDesugarLibTask::class.java)
 
                 appTask.configureEach {
+                    keepRulesConfigurations.addAll(
+                        testTask.named(testL8TaskName).flatMap { it.keepRules.asFile }
+                            .map { it.readLines() },
+                    )
+
                     if (extension.emitDebugInformation.getOrElse(false)) {
                         val diagnosticOutputDir = project.layout.buildDirectory
                             .dir("$INTERMEDIATES_DIR/l8-diagnostics/$name")
@@ -183,7 +185,7 @@ public class KeeperPlugin : Plugin<Project> {
                 }
 
                 // Now clear the outputs from androidTest's L8 task to end with
-                project.tasks.named { it == testL8TaskName }.configureEach {
+                testTask.configureEach {
                     doLast {
                         this as L8DexDesugarLibTask
                         clearDir(desugarLibDex.asFile.get())
