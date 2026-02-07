@@ -1,0 +1,22 @@
+plugins {
+    id("java-gradle-plugin")
+    alias(libs.plugins.starter.library.kotlin)
+}
+
+dependencies {
+    implementation(libs.jetbrains.dokka)
+    implementation(libs.vanniktech.maven.publish)
+}
+
+kotlin {
+    jvmToolchain(libs.versions.java.compilation.get().toInteger())
+}
+
+gradlePlugin {
+    plugins {
+        publishingPlugin {
+            id = 'com.starter.publishing'
+            implementationClass = 'PublishingPlugin'
+        }
+    }
+}

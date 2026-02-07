@@ -1,0 +1,79 @@
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionContainer
+import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.jvm.tasks.Jar
+import org.gradle.language.jvm.tasks.ProcessResources
+import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
+import org.gradle.plugins.signing.SigningExtension
+
+class PublishingPlugin : Plugin<Project> {
+
+    override fun apply(target: Project) = with(target) {
+        pluginManager.apply("maven-publish")
+        pluginManager.apply("com.gradle.plugin-publish")
+        if (findConfig("SIGNING_PASSWORD").isNotEmpty()) {
+            pluginManager.apply("signing")
+        }
+
+        extensions.configure<JavaPluginExtension> {
+            withSourcesJar()
+            withJavadocJar()
+        }
+
+        pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+            pluginManager.apply("org.jetbrains.dokka")
+
+            tasks.named("javadocJar", Jar::class.java) { javadocJar ->
+                javadocJar.from(tasks.named("dokkaGeneratePublicationHtml"))
+            }
+            tasks.named("processResources", ProcessResources::class.java) { processResources ->
+                processResources.from(rootProject.file("LICENSE.txt"))
+            }
+        }
+
+        extensions.configure<PublishingExtension> {
+            with(repositories) {
+                maven { maven ->
+                    maven.name = "github"
+                    maven.setUrl("https://maven.pkg.github.com/usefulness/keeper")
+                    with(maven.credentials) {
+                        username = "usefulness"
+                        password = findConfig("GITHUB_TOKEN")
+                    }
+                }
+            }
+        }
+        pluginManager.withPlugin("signing") {
+            with(extensions.extraProperties) {
+                set("signing.keyId", findConfig("SIGNING_KEY_ID"))
+                set("signing.password", findConfig("SIGNING_PASSWORD"))
+                set("signing.secretKeyRingFile", findConfig("SIGNING_SECRET_KEY_RING_FILE"))
+            }
+
+            extensions.configure<SigningExtension>("signing") { signing ->
+                if (findConfig("SIGNING_PASSWORD").isNotEmpty()) {
+                    signing.sign(extensions.getByType(PublishingExtension::class.java).publications)
+                }
+            }
+        }
+
+        extensions.configure<GradlePluginDevelopmentExtension> {
+            website.set("https://github.com/usefulness/keeper/")
+            vcsUrl.set("https://github.com/usefulness/keeper.git")
+            plugins.configureEach { plugin ->
+                plugin.tags.set(listOf("android", "kotlin", "keeper", "proguard", "release", "android-test"))
+                plugin.description = "A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources."
+            }
+        }
+    }
+
+    private inline fun <reified T: Any> ExtensionContainer.configure(crossinline receiver: T.() -> Unit) {
+        configure(T::class.java) { receiver(it) }
+    }
+}
+
+private fun Project.findConfig(key: String): String {
+    return findProperty(key)?.toString() ?: System.getenv(key) ?: ""
+}

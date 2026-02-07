@@ -1,33 +1,34 @@
 [versions]
-agp = "8.5.0"
-androidx-test = "1.6.1"
-kotlin = "1.9.24"
-gjf = "1.22.0"
-ktfmt = "0.51"
-
-[plugins]
-agp-library = { id = "com.android.library", version.ref = "agp" }
-binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.15.0-Beta.3" }
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.29.0" }
-spotless = { id = "com.diffplug.spotless", version = "6.25.0" }
+google-agp = "9.0.0"
+maven-kotlin = "2.3.10"
+gradle-starter = "0.94.0"
+java-compilation = "25"
+maven-vanniktech-publish = "0.36.0"
+maven-dokka = "2.2.0-Beta"
+gradle-pluginpublish = "2.0.0"
+maven-ktlint = "1.8.0"
+google-r8 = "8.13.19"
 
 [libraries]
-androidx-annotation = "androidx.annotation:annotation:1.8.0"
-androidx-test-orchestrator = "androidx.test:orchestrator:1.5.0"
-androidx-test-rules = { module = "androidx.test:rules", version = "1.6.1" }
-androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
-androidx-test-truth = "androidx.test.ext:junit:1.2.1"
-agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
-desugarJdkLibs = "com.android.tools:desugar_jdk_libs:2.0.4"
+agp-api = { module = "com.android.tools.build:gradle-api", version.ref = "google-agp" }
+agp-impl = { module = "com.android.tools.build:gradle", version.ref = "google-agp" }
+r8 = { module = "com.android.tools:r8", version.ref = "google-r8" }
 javapoet = "com.squareup:javapoet:1.13.0"
 junit = "junit:junit:4.13.2"
-kgp = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
-kgp-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-kotlinpoet = "com.squareup:kotlinpoet:1.17.0"
-okio = "com.squareup.okio:okio:3.9.0"
-truth = "com.google.truth:truth:1.4.2"
-zipflinger = { module = "com.android:zipflinger", version.ref = "agp" }
+kgp-impl = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "maven-kotlin" }
+kgp-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "maven-kotlin" }
+kotlinpoet = "com.squareup:kotlinpoet:2.2.0"
+okio = "com.squareup.okio:okio:3.16.4"
+truth = "com.google.truth:truth:1.4.5"
+zipflinger = { module = "com.android:zipflinger", version.ref = "google-agp" }
+vanniktech-maven-publish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "maven-vanniktech-publish" }
+jetbrains-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "maven-dokka" }
+ktlint-cli = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "maven-ktlint" }
 
-renovateTrigger-gjf = { module = "com.google.googlejavaformat:google-java-format", version.ref = "gjf" }
-renovateTrigger-ktfmt = { module = "com.facebook:ktfmt", version.ref = "ktfmt" }
+[plugins]
+agp-library = { id = "com.android.library", version.ref = "google-agp" }
+binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version = "0.18.1" }
+starter-library-kotlin = { id = "com.starter.library.kotlin", version.ref = "gradle-starter" }
+starter-config = { id = "com.starter.config", version.ref = "gradle-starter" }
+starter-versioning = { id = "com.starter.versioning", version.ref = "gradle-starter" }
+gradle-pluginpublish = { id = "com.gradle.plugin-publish", version.ref = "gradle-pluginpublish" }

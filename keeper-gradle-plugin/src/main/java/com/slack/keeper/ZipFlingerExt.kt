@@ -25,48 +25,46 @@ import java.nio.file.Path
  * zip entry.
  */
 internal fun File.classesSequence(): Sequence<Pair<String, File>> {
-  val prefix = absolutePath
-  return walkTopDown()
-    .filter { it.extension == "class" }
-    .filterNot { "META-INF" in it.name }
-    .sortedBy { it.invariantSeparatorsPath }
-    .map {
-      // zip specification "4.4.17.1 file name: (Variable)" items:
-      it.absolutePath
-        // "The name of the file, with optional relative path.
-        //  The path stored MUST NOT contain a drive or
-        //  device letter, or a leading slash"
-        .removePrefix(prefix)
-        .removePrefix(File.separator)
-        // "All slashes MUST be forward slashes '/' as opposed
-        // to backwards slashes '\' for compatibility"
-        .replace(File.separator, "/") to it
-    }
+    val prefix = absolutePath
+    return walkTopDown()
+        .filter { it.extension == "class" }
+        .filterNot { "META-INF" in it.name }
+        .sortedBy { it.invariantSeparatorsPath }
+        .map {
+            // zip specification "4.4.17.1 file name: (Variable)" items:
+            it.absolutePath
+                // "The name of the file, with optional relative path.
+                //  The path stored MUST NOT contain a drive or
+                //  device letter, or a leading slash"
+                .removePrefix(prefix)
+                .removePrefix(File.separator)
+                // "All slashes MUST be forward slashes '/' as opposed
+                // to backwards slashes '\' for compatibility"
+                .replace(File.separator, "/") to it
+        }
 }
 
 /** Extracts classes from the target [jar] into this archive. */
 internal fun ZipArchive.extractClassesFrom(jar: File, callback: (String) -> Unit) {
-  val jarSource = newZipSource(jar)
-  jarSource
-    .entries()
-    .filterNot { "META-INF" in it.key }
-    .forEach { (name, entry) ->
-      if (!entry.isDirectory && entry.name.endsWith(".class")) {
-        val entryName = name.removePrefix(".")
-        callback(entryName)
-        delete(entryName)
-        jarSource.select(entryName, name)
-      }
-    }
-  add(jarSource)
+    val jarSource = newZipSource(jar)
+    jarSource
+        .entries()
+        .filterNot { "META-INF" in it.key }
+        .forEach { (name, entry) ->
+            if (!entry.isDirectory && entry.name.endsWith(".class")) {
+                val entryName = name.removePrefix(".")
+                callback(entryName)
+                delete(entryName)
+                jarSource.select(entryName, name)
+            }
+        }
+    add(jarSource)
 }
 
-private fun newZipSource(jar: File): ZipSource {
-  return try {
+private fun newZipSource(jar: File): ZipSource = try {
     // AGP 4.1/4.2
     ZipSource::class.java.getDeclaredConstructor(File::class.java).newInstance(jar)
-  } catch (e: NoSuchMethodException) {
+} catch (e: NoSuchMethodException) {
     // AGP/ZipFlinger 7+
     ZipSource::class.java.getDeclaredConstructor(Path::class.java).newInstance(jar.toPath())
-  }
 }

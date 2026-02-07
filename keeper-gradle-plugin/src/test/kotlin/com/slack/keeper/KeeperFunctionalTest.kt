@@ -18,11 +18,6 @@ package com.slack.keeper
 import com.google.common.truth.Truth.assertThat
 import com.slack.keeper.KeeperPlugin.Companion.interpolateR8TaskName
 import com.squareup.javapoet.ClassName
-import com.squareup.kotlinpoet.ClassName as KpClassName
-import java.io.File
-import java.util.Locale
-import java.util.zip.ZipFile
-import javax.lang.model.element.Modifier.STATIC
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.BuildTask
 import org.gradle.testkit.runner.GradleRunner
@@ -31,6 +26,11 @@ import org.intellij.lang.annotations.Language
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
+import java.util.Locale
+import java.util.zip.ZipFile
+import javax.lang.model.element.Modifier.STATIC
+import com.squareup.kotlinpoet.ClassName as KpClassName
 
 /**
  * Testing gradle plugins is finicky. If you get errors when running from the IDE, try following
@@ -70,239 +70,243 @@ import org.junit.rules.TemporaryFolder
  */
 internal class KeeperFunctionalTest {
 
-  @Rule
-  @JvmField
-  val temporaryFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
+    @Rule
+    @JvmField
+    val temporaryFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
 
-  /**
-   * Basic smoke test. This covers the standard flow and touches on the following:
-   * - Variant configuration
-   * - Packaging of intermediate jars with compiled sources (including Kotlin sources)
-   * - Generation of inferred rules
-   * - Inclusion of generated rules in the final proguard configuration
-   */
-  @Test
-  fun standard() {
-    val (projectDir, proguardConfigOutput) =
-      prepareProject(
-        temporaryFolder,
-        buildGradleFile(
-          "staging",
-          "external",
-          keeperExtraConfig = KeeperExtraConfig.TRACE_REFERENCES_ENABLED,
-        ),
-      )
+    /**
+     * Basic smoke test. This covers the standard flow and touches on the following:
+     * - Variant configuration
+     * - Packaging of intermediate jars with compiled sources (including Kotlin sources)
+     * - Generation of inferred rules
+     * - Inclusion of generated rules in the final proguard configuration
+     */
+    @Test
+    fun standard() {
+        val (projectDir, proguardConfigOutput) =
+            prepareProject(
+                temporaryFolder = temporaryFolder,
+                buildFileText = buildGradleFile(
+                    testBuildType = "staging",
+                    testFlavor = "external",
+                    keeperExtraConfig = KeeperExtraConfig.TRACE_REFERENCES_ENABLED,
+                ),
+            )
 
-    val result = projectDir.runAsWiredStaging()
+        val result = projectDir.runAsWiredStaging()
 
-    // Ensure the expected parameterized minifiers ran
-    assertThat(result.resultOf(interpolateR8TaskName("ExternalStaging")))
-      .isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(result.resultOf(interpolateR8TaskName("ExternalStagingAndroidTest")))
-      .isEqualTo(TaskOutcome.SUCCESS)
+        // Ensure the expected parameterized minifiers ran
+        assertThat(result.resultOf(interpolateR8TaskName("ExternalStaging")))
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.resultOf(interpolateR8TaskName("ExternalStagingAndroidTest")))
+            .isEqualTo(TaskOutcome.SUCCESS)
 
-    // Assert we correctly packaged app classes
-    val appJar = projectDir.generatedChild("externalStaging/classes.jar")
-    val appClasses = ZipFile(appJar).readClasses()
-    assertThat(appClasses).containsAtLeastElementsIn(EXPECTED_APP_CLASSES)
-    assertThat(appClasses).containsNoneIn(EXPECTED_ANDROID_TEST_CLASSES)
+        // Assert we correctly packaged app classes
+        val appJar = projectDir.generatedChild("externalStaging/classes.jar")
+        val appClasses = ZipFile(appJar).readClasses()
+        assertThat(appClasses).containsAtLeastElementsIn(EXPECTED_APP_CLASSES)
+        assertThat(appClasses).containsNoneIn(EXPECTED_ANDROID_TEST_CLASSES)
 
-    // Assert we correctly packaged androidTest classes
-    val androidTestJar = projectDir.generatedChild("externalStagingAndroidTest/classes.jar")
-    val androidTestClasses = ZipFile(androidTestJar).readClasses()
-    assertThat(androidTestClasses).containsAtLeastElementsIn(EXPECTED_ANDROID_TEST_CLASSES)
-    assertThat(androidTestClasses).containsNoneIn(EXPECTED_APP_CLASSES)
+        // Assert we correctly packaged androidTest classes
+        val androidTestJar = projectDir.generatedChild("externalStagingAndroidTest/classes.jar")
+        val androidTestClasses = ZipFile(androidTestJar).readClasses()
+        assertThat(androidTestClasses).containsAtLeastElementsIn(EXPECTED_ANDROID_TEST_CLASSES)
+        assertThat(androidTestClasses).containsNoneIn(EXPECTED_APP_CLASSES)
 
-    // Assert we correctly generated rules
-    val generatedRules =
-      projectDir.generatedChild("ExternalStagingAndroidTest/inferredKeepRules.pro")
-    assertThat(generatedRules.readText().trim())
-      .isEqualTo(
-        EXPECTED_TRACE_REFERENCES_CONFIG.map { indentRules(it.key, it.value) }
-          .joinToString(System.lineSeparator())
-      )
+        // Assert we correctly generated rules
+        val generatedRules = projectDir.generatedChild("ExternalStagingAndroidTest/inferredKeepRules.pro")
+        assertThat(generatedRules.readText().trim())
+            .isEqualTo(
+                EXPECTED_TRACE_REFERENCES_CONFIG.map { indentRules(it.key, it.value) }
+                    .joinToString(System.lineSeparator()),
+            )
 
-    // Finally - verify our rules were included in the final minification execution.
-    // Have to compare slightly different strings because proguard's format is a little different
-    assertThat(proguardConfigOutput.readText().trim().replace("    ", "  ")).let { assertion ->
-      EXPECTED_TRACE_REFERENCES_CONFIG.forEach { assertion.contains(indentRules(it.key, it.value)) }
+        // Finally - verify our rules were included in the final minification execution.
+        // Have to compare slightly different strings because proguard's format is a little different
+        assertThat(proguardConfigOutput.readText().trim().replace("    ", "  ")).let { assertion ->
+            EXPECTED_TRACE_REFERENCES_CONFIG.forEach { assertion.contains(indentRules(it.key, it.value)) }
+        }
     }
-  }
 
-  // Asserts that our extension marker properly opts variants in. In our fixture project, the
-  // "externalRelease" build variant will be ignored, while tasks will be generated for the
-  // "internalRelease" variant.
-  @Test
-  fun extensionMarker() {
-    val (projectDir, _) =
-      prepareProject(
-        temporaryFolder,
-        buildGradleFile(
-          "release",
-          "external",
-          androidExtraConfig = AndroidExtraConfig.ONLY_INTERNAL_RELEASE,
-        ),
-      )
+    // Asserts that our extension marker properly opts variants in. In our fixture project, the
+    // "externalRelease" build variant will be ignored, while tasks will be generated for the
+    // "internalRelease" variant.
+    @Test
+    fun extensionMarker() {
+        val (projectDir, _) =
+            prepareProject(
+                temporaryFolder,
+                buildGradleFile(
+                    "release",
+                    "external",
+                    androidExtraConfig = AndroidExtraConfig.ONLY_INTERNAL_RELEASE,
+                ),
+            )
 
-    val result =
-      runGradle(
-        projectDir,
-        "assembleExternalRelease",
-        "assembleInternalRelease",
-        "-x",
-        "lintVitalExternalRelease",
-        "-x",
-        "lintVitalInternalRelease",
-      )
-    assertThat(result.findTask("jarExternalReleaseAndroidTestClassesForKeeper")).isNull()
-    assertThat(result.findTask("jarExternalReleaseClassesForKeeper")).isNull()
-    assertThat(result.findTask("inferExternalReleaseAndroidTestKeepRulesForKeeper")).isNull()
+        val result =
+            runGradle(
+                projectDir,
+                "assembleExternalRelease",
+                "assembleInternalRelease",
+                "-x",
+                "lintVitalExternalRelease",
+                "-x",
+                "lintVitalInternalRelease",
+            )
+        assertThat(result.findTask("jarExternalReleaseAndroidTestClassesForKeeper")).isNull()
+        assertThat(result.findTask("jarExternalReleaseClassesForKeeper")).isNull()
+        assertThat(result.findTask("inferExternalReleaseAndroidTestKeepRulesForKeeper")).isNull()
 
-    assertThat(result.resultOf("jarInternalReleaseAndroidTestClassesForKeeper"))
-      .isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(result.resultOf("jarInternalReleaseClassesForKeeper")).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(result.resultOf("inferInternalReleaseAndroidTestKeepRulesForKeeper"))
-      .isEqualTo(TaskOutcome.SUCCESS)
-  }
+        assertThat(result.resultOf("jarInternalReleaseAndroidTestClassesForKeeper"))
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.resultOf("jarInternalReleaseClassesForKeeper")).isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.resultOf("inferInternalReleaseAndroidTestKeepRulesForKeeper"))
+            .isEqualTo(TaskOutcome.SUCCESS)
+    }
 
-  // Asserts that if Keeper was configured to create keep rules for a variant that isn't minified,
-  // an error will be emitted, and the tasks won't be created.
-  @Test
-  fun extensionMarkerWarning() {
-    // internalDebug variant isn't minified, but the variant is opted into Keeper.
-    val (projectDir, _) =
-      prepareProject(
-        temporaryFolder,
-        buildGradleFile(
-          "debug",
-          "internal",
-          androidExtraConfig = AndroidExtraConfig.ONLY_INTERNAL_DEBUG,
-        ),
-      )
+    // Asserts that if Keeper was configured to create keep rules for a variant that isn't minified,
+    // an error will be emitted, and the tasks won't be created.
+    @Test
+    fun extensionMarkerWarning() {
+        // internalDebug variant isn't minified, but the variant is opted into Keeper.
+        val (projectDir, _) =
+            prepareProject(
+                temporaryFolder,
+                buildGradleFile(
+                    "debug",
+                    "internal",
+                    androidExtraConfig = AndroidExtraConfig.ONLY_INTERNAL_DEBUG,
+                ),
+            )
 
-    val result = runGradle(projectDir, "assembleInternalDebug")
+        val result = runGradle(projectDir, "assembleInternalDebug")
 
-    // Keeper doesn't create the tasks.
-    assertThat(result.findTask("jarInternalDebugAndroidTestClassesForKeeper")).isNull()
-    assertThat(result.findTask("jarInternalDebugClassesForKeeper")).isNull()
-    assertThat(result.findTask("inferInternalDebugAndroidTestKeepRulesForKeeper")).isNull()
-    assertThat(result.output)
-      .contains(
-        "Keeper is configured to generate keep rules for the \"internalDebug\" build variant"
-      )
-  }
+        // Keeper doesn't create the tasks.
+        assertThat(result.findTask("jarInternalDebugAndroidTestClassesForKeeper")).isNull()
+        assertThat(result.findTask("jarInternalDebugClassesForKeeper")).isNull()
+        assertThat(result.findTask("inferInternalDebugAndroidTestKeepRulesForKeeper")).isNull()
+        assertThat(result.output)
+            .contains(
+                "Keeper is configured to generate keep rules for the \"internalDebug\" build variant",
+            )
+    }
 
-  // Ensures that manual R8 repo management works
-  @Test
-  fun manualR8RepoManagement() {
-    val (projectDir, _) =
-      prepareProject(temporaryFolder, buildGradleFile("staging", "external", false))
-    projectDir.runAsWiredStaging()
-  }
+    // Ensures that manual R8 repo management works
+    @Test
+    fun manualR8RepoManagement() {
+        val (projectDir, _) =
+            prepareProject(temporaryFolder, buildGradleFile("staging", "external", false))
+        projectDir.runAsWiredStaging()
+    }
 
-  @Test
-  fun duplicateClassesWarning() {
-    val buildFile =
-      buildGradleFile(
-        testBuildType = "staging",
-        testFlavor = "external",
-        emitDebugInformation = true,
-        extraDependencies =
-          mapOf(
-            "implementation" to "\"org.threeten:threetenbp:1.4.0:no-tzdb\"",
-            "androidTestImplementation" to "\"org.threeten:threetenbp:1.4.0\"",
-          ),
-      )
-    val (projectDir, _) = prepareProject(temporaryFolder, buildFile)
-    projectDir.runSingleTask("jarExternalStagingAndroidTestClassesForKeeper")
+    @Test
+    fun duplicateClassesWarning() {
+        val buildFile =
+            buildGradleFile(
+                testBuildType = "staging",
+                testFlavor = "external",
+                emitDebugInformation = true,
+                extraDependencies = mapOf(
+                    "implementation" to "\"org.threeten:threetenbp:1.4.0:no-tzdb\"",
+                    "androidTestImplementation" to "\"org.threeten:threetenbp:1.4.0\"",
+                ),
+            )
+        val (projectDir, _) = prepareProject(temporaryFolder, buildFile)
+        projectDir.runSingleTask("jarExternalStagingAndroidTestClassesForKeeper")
 
-    // Check that we emitted a duplicate classes file
-    val duplicateClasses =
-      projectDir.generatedChild("externalStagingAndroidTest/diagnostics/duplicateClasses.txt")
-    assertThat(duplicateClasses.readText().trim()).isNotEmpty()
-  }
+        // Check that we emitted a duplicate classes file
+        val duplicateClasses =
+            projectDir.generatedChild("externalStagingAndroidTest/diagnostics/duplicateClasses.txt")
+        assertThat(duplicateClasses.readText().trim()).isNotEmpty()
+    }
 
-  // TODO test cases
-  //  Transitive androidTest deps using transitive android deps (i.e. like IdlingResource)
-  //  multidex (zip64 use in jars)
+    // TODO test cases
+    //  Transitive androidTest deps using transitive android deps (i.e. like IdlingResource)
+    //  multidex (zip64 use in jars)
 
-  private fun File.runSingleTask(name: String): BuildResult {
-    val result = runGradle(this, name, "-x", "lintVitalExternalStaging")
-    assertThat(result.resultOf(name)).isEqualTo(TaskOutcome.SUCCESS)
-    return result
-  }
+    private fun File.runSingleTask(name: String): BuildResult {
+        val result = runGradle(this, name, "-x", "lintVitalExternalStaging")
+        assertThat(result.resultOf(name)).isEqualTo(TaskOutcome.SUCCESS)
+        return result
+    }
 
-  private fun File.runAsWiredStaging(): BuildResult {
-    val result = runSingleTask("assembleExternalStagingAndroidTest")
-    assertThat(result.resultOf("jarExternalStagingAndroidTestClassesForKeeper"))
-      .isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(result.resultOf("jarExternalStagingClassesForKeeper")).isEqualTo(TaskOutcome.SUCCESS)
-    assertThat(result.resultOf("inferExternalStagingAndroidTestKeepRulesForKeeper"))
-      .isEqualTo(TaskOutcome.SUCCESS)
-    return result
-  }
+    private fun File.runAsWiredStaging(): BuildResult {
+        val result = runSingleTask("assembleExternalStagingAndroidTest")
+        assertThat(result.resultOf("jarExternalStagingAndroidTestClassesForKeeper"))
+            .isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.resultOf("jarExternalStagingClassesForKeeper")).isEqualTo(TaskOutcome.SUCCESS)
+        assertThat(result.resultOf("inferExternalStagingAndroidTestKeepRulesForKeeper"))
+            .isEqualTo(TaskOutcome.SUCCESS)
+        return result
+    }
 
-  private fun runGradle(projectDir: File, vararg args: String): BuildResult {
-    // Run twice to properly ensure config cache worked
-    val result = runGradleInternal(projectDir, *args)
-    //    val cachedResult = runGradleInternal(projectDir, *args)
-    //    require(cachedResult.output.contains("Reusing configuration cache."))
-    return result
-  }
+    private fun runGradle(projectDir: File, vararg args: String): BuildResult {
+        // Run twice to properly ensure config cache worked
+        val result = runGradleInternal(projectDir, *args)
+        //    val cachedResult = runGradleInternal(projectDir, *args)
+        //    require(cachedResult.output.contains("Reusing configuration cache."))
+        return result
+    }
 
-  private fun runGradleInternal(projectDir: File, vararg args: String): BuildResult {
-    val extraArgs = args.toMutableList()
-    extraArgs += "--stacktrace"
-    extraArgs += "--configuration-cache"
-    return GradleRunner.create()
-      .forwardStdOutput(System.out.writer())
-      .forwardStdError(System.err.writer())
-      .withProjectDir(projectDir)
-      .withArguments(extraArgs)
-      .withPluginClasspath()
-      .withDebug(true) // Tests run in-process and way faster with this enabled
-      .build()
-  }
+    private fun runGradleInternal(projectDir: File, vararg args: String): BuildResult {
+        val extraArgs = args.toMutableList()
+        extraArgs += "--stacktrace"
+        extraArgs += "--configuration-cache"
+        return GradleRunner.create()
+            .forwardStdOutput(System.out.writer())
+            .forwardStdError(System.err.writer())
+            .withProjectDir(projectDir)
+            .withArguments(extraArgs)
+            .withPluginClasspath()
+            .withDebug(true) // Tests run in-process and way faster with this enabled
+            .build()
+    }
 
-  private fun BuildResult.findTask(name: String): BuildTask? {
-    return task(name.prefixIfNot(":"))
-  }
+    private fun BuildResult.findTask(name: String): BuildTask? = task(name.prefixIfNot(":"))
 
-  private fun BuildResult.resultOf(name: String): TaskOutcome {
-    return findTask(name)?.outcome
-      ?: error(
-        "Could not find task '$name', which is usually an indication that it didn't run. See GradleRunner's printed task graph for more details."
-      )
-  }
+    private fun BuildResult.resultOf(name: String): TaskOutcome = findTask(name)?.outcome
+        ?: error(
+            "Could not find task '$name', which is usually an indication that it didn't run. See GradleRunner's printed task graph for more details.",
+        )
 }
 
-private fun String.prefixIfNot(prefix: String) =
-  if (this.startsWith(prefix)) this else "$prefix$this"
+private fun String.prefixIfNot(prefix: String) = if (this.startsWith(prefix)) this else "$prefix$this"
 
 private val EXPECTED_TRACE_REFERENCES_CONFIG: Map<String, List<String>?> =
-  mapOf(
-    "-keep class com.slack.keeper.sample.TestOnlyClass" to
-      listOf("public static void testOnlyMethod();"),
-    "-keep class com.slack.keeper.sample.TestOnlyKotlinClass" to
-      listOf(
-        "public void testOnlyMethod();",
-        "com.slack.keeper.sample.TestOnlyKotlinClass INSTANCE;",
-      ),
-  )
+    mapOf(
+        "-keep class com.slack.keeper.sample.TestOnlyClass" to listOf(
+            "public static void testOnlyMethod();",
+        ),
+        "-keep class com.slack.keeper.sample.TestOnlyKotlinClass" to listOf(
+            "public void testOnlyMethod();",
+            "com.slack.keeper.sample.TestOnlyKotlinClass INSTANCE;",
+        ),
+        "-keep @interface kotlin.Metadata" to listOf(
+            "public java.lang.String[] d1();",
+            "public java.lang.String[] d2();",
+            "public int k();",
+            "public int[] mv();",
+            "public int xi();",
+        ),
+        "-keep class kotlin.Unit" to null,
+        "-keep @interface org.jetbrains.annotations.NotNull" to null,
+    )
 
-private fun indentRules(header: String, content: List<String>?) =
-  if (content == null) header
-  else {
+private fun indentRules(header: String, content: List<String>?) = if (content == null) {
     "$header {" +
-      System.lineSeparator() +
-      content.joinToString(System.lineSeparator()) { "  $it" } +
-      System.lineSeparator() +
-      "}"
-  }
+        System.lineSeparator() +
+        "}"
+} else {
+    "$header {" +
+        System.lineSeparator() +
+        content.joinToString(System.lineSeparator()) { "  $it" } +
+        System.lineSeparator() +
+        "}"
+}
 
 @Language("PROGUARD")
 private val TEST_PROGUARD_RULES =
-  """
+    """
   # Basically don't do anything to androidTest code
   -dontskipnonpubliclibraryclassmembers
   -dontoptimize
@@ -310,82 +314,82 @@ private val TEST_PROGUARD_RULES =
   -dontshrink
   -ignorewarnings
   -dontnote **
-"""
-    .trimIndent()
+  """
+        .trimIndent()
 
 internal enum class KeeperExtraConfig(val groovy: String) {
-  NONE(""),
-  TRACE_REFERENCES_ENABLED(
+    NONE(""),
+    TRACE_REFERENCES_ENABLED(
+        """
+    traceReferences {}
     """
-      traceReferences {}
-    """
-      .trimIndent()
-  ),
+            .trimIndent(),
+    ),
 }
 
 internal enum class AndroidExtraConfig(val groovy: String) {
-  ONLY_EXTERNAL_STAGING(
-    """
-      androidComponents {
-        beforeVariants(selector().all()) { variantBuilder ->
-          if (variantBuilder.name == "externalStaging") {
-            variantBuilder.registerExtension(
-              com.slack.keeper.KeeperVariantMarker.class,
-              com.slack.keeper.KeeperVariantMarker.INSTANCE
-            )
-          }
+    ONLY_EXTERNAL_STAGING(
+        """
+    androidComponents {
+      beforeVariants(selector().all()) { variantBuilder ->
+        if (variantBuilder.name == "externalStaging") {
+          variantBuilder.registerExtension(
+            com.slack.keeper.KeeperVariantMarker.class,
+            com.slack.keeper.KeeperVariantMarker.INSTANCE
+          )
         }
       }
+    }
     """
-      .trimIndent()
-  ),
-  ONLY_INTERNAL_RELEASE(
-    """
-      androidComponents {
-        beforeVariants(selector().all()) { variantBuilder ->
-          if (variantBuilder.name == "internalRelease") {
-            variantBuilder.registerExtension(
-              com.slack.keeper.KeeperVariantMarker.class,
-              com.slack.keeper.KeeperVariantMarker.INSTANCE
-            )
-          }
+            .trimIndent(),
+    ),
+    ONLY_INTERNAL_RELEASE(
+        """
+    androidComponents {
+      beforeVariants(selector().all()) { variantBuilder ->
+        if (variantBuilder.name == "internalRelease") {
+          variantBuilder.registerExtension(
+            com.slack.keeper.KeeperVariantMarker.class,
+            com.slack.keeper.KeeperVariantMarker.INSTANCE
+          )
         }
       }
+    }
     """
-      .trimIndent()
-  ),
-  ONLY_INTERNAL_DEBUG(
-    """
-      androidComponents {
-        beforeVariants(selector().all()) { variantBuilder ->
-          if (variantBuilder.name == "internalDebug") {
-            variantBuilder.registerExtension(
-              com.slack.keeper.KeeperVariantMarker.class,
-              com.slack.keeper.KeeperVariantMarker.INSTANCE
-            )
-          }
+            .trimIndent(),
+    ),
+    ONLY_INTERNAL_DEBUG(
+        """
+    androidComponents {
+      beforeVariants(selector().all()) { variantBuilder ->
+        if (variantBuilder.name == "internalDebug") {
+          variantBuilder.registerExtension(
+            com.slack.keeper.KeeperVariantMarker.class,
+            com.slack.keeper.KeeperVariantMarker.INSTANCE
+          )
         }
       }
+    }
     """
-      .trimIndent()
-  ),
+            .trimIndent(),
+    ),
 }
 
 @Language("groovy")
 private fun buildGradleFile(
-  testBuildType: String,
-  testFlavor: String,
-  automaticR8RepoManagement: Boolean = true,
-  keeperExtraConfig: KeeperExtraConfig = KeeperExtraConfig.NONE,
-  androidExtraConfig: AndroidExtraConfig = AndroidExtraConfig.ONLY_EXTERNAL_STAGING,
-  emitDebugInformation: Boolean = true,
-  extraDependencies: Map<String, String> = emptyMap(),
+    testBuildType: String,
+    testFlavor: String,
+    automaticR8RepoManagement: Boolean = true,
+    keeperExtraConfig: KeeperExtraConfig = KeeperExtraConfig.NONE,
+    androidExtraConfig: AndroidExtraConfig = AndroidExtraConfig.ONLY_EXTERNAL_STAGING,
+    emitDebugInformation: Boolean = true,
+    extraDependencies: Map<String, String> = emptyMap(),
 ): String {
-  val testVariant = "$testFlavor${testBuildType.capitalize(Locale.US)}"
-  @Suppress("UnnecessaryVariable")
-  @Language("groovy")
-  val buildScript =
-    """
+    val testVariant = "$testFlavor${testBuildType.replaceFirstChar(Char::uppercase)}"
+
+    // language=groovy
+    val buildScript =
+        """
   import com.android.build.api.variant.VariantSelector
   import com.slack.keeper.KeeperVariantMarker
   import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -399,9 +403,8 @@ private fun buildGradleFile(
   }
 
   plugins {
-    id 'com.android.application' version '8.4.0'
-    id 'org.jetbrains.kotlin.android' version '1.9.23'
-    id 'com.slack.keeper'
+    id 'com.android.application' version '9.0.0'
+    id 'io.github.usefulness.keeper'
   }
 
   // Ideally we use toolchains for a known version; this fails on windows w/WindowsRegistry access issues
@@ -412,13 +415,13 @@ private fun buildGradleFile(
   tasks.withType(KotlinCompile).configureEach { compilerOptions { jvmTarget.set(JvmTarget.JVM_11) } }
 
   android {
-    compileSdkVersion 34
+    compileSdk = 36
     namespace "com.slack.keeper.sample"
 
     defaultConfig {
       applicationId "com.slack.keeper.sample"
-      minSdk 21
-      targetSdk 34
+      minSdk = 21
+      targetSdk = 36
     }
 
     compileOptions {
@@ -430,7 +433,7 @@ private fun buildGradleFile(
       release {
         minifyEnabled = true
         signingConfig = buildTypes.debug.signingConfig
-        proguardFiles getDefaultProguardFile('proguard-android.txt'), 'testconfiguration.pro'
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'testconfiguration.pro'
         testProguardFiles('proguard-test-rules.pro')
       }
       staging {
@@ -467,7 +470,10 @@ private fun buildGradleFile(
     google()
     mavenCentral()
     ${
-      if (automaticR8RepoManagement) "" else """
+            if (automaticR8RepoManagement) {
+                ""
+            } else {
+                """
     maven {
       url = uri("https://storage.googleapis.com/r8-releases/raw")
       content {
@@ -475,7 +481,8 @@ private fun buildGradleFile(
       }
     }
   """
-    }
+            }
+        }
   }
 
   ${androidExtraConfig.groovy}
@@ -491,127 +498,128 @@ private fun buildGradleFile(
     ${extraDependencies.entries.joinToString(System.lineSeparator()) { "    ${it.key} ${it.value}" }}
   }
   """
-      .trimIndent()
-  return buildScript
+            .trimIndent()
+    return buildScript
 }
 
 private val MAIN_SOURCES =
-  setOf(
-    // Class that's accessed from the application but not test sources
-    javaFile("com.slack.keeper.sample", "ApplicationUsedClass") {
-      methodSpec("applicationCalledMethod") {
-        addModifiers(STATIC)
-        addComment("This method is called from the application class")
-      }
-    },
-    javaFile("com.slack.keeper.sample", "SampleApplication") {
-      superclass(ClassName.get("android.app", "Application"))
-      methodSpec("onCreate") {
-        addAnnotation(Override::class.java)
-        addStatement("super.onCreate()")
-        addStatement(
-          "\$T.applicationCalledMethod()",
-          ClassName.get("com.slack.keeper.sample", "ApplicationUsedClass"),
-        )
-      }
-    },
-    // Class that's only accessed from androidTest
-    javaFile("com.slack.keeper.sample", "TestOnlyClass") {
-      methodSpec("testOnlyMethod") {
-        addModifiers(STATIC)
-        addComment("This method is only called from androidTest sources!")
-      }
-    },
-    // Class that's only accessed from androidTest
-    kotlinFile("com.slack.keeper.sample", "TestOnlyKotlinClass") {
-      funSpec("testOnlyMethod") {
-        addComment("This method is only called from androidTest sources!")
-      }
-    },
-    // Class that's unused
-    javaFile("com.slack.keeper.sample", "UnusedClass") {
-      methodSpec("unusedMethod") {
-        addModifiers(STATIC)
-        addComment("This class and method are completely unused")
-      }
-    },
-  )
+    setOf(
+        // Class that's accessed from the application but not test sources
+        javaFile("com.slack.keeper.sample", "ApplicationUsedClass") {
+            methodSpec("applicationCalledMethod") {
+                addModifiers(STATIC)
+                addComment("This method is called from the application class")
+            }
+        },
+        javaFile("com.slack.keeper.sample", "SampleApplication") {
+            superclass(ClassName.get("android.app", "Application"))
+            methodSpec("onCreate") {
+                addAnnotation(Override::class.java)
+                addStatement("super.onCreate()")
+                addStatement(
+                    "\$T.applicationCalledMethod()",
+                    ClassName.get("com.slack.keeper.sample", "ApplicationUsedClass"),
+                )
+            }
+        },
+        // Class that's only accessed from androidTest
+        javaFile("com.slack.keeper.sample", "TestOnlyClass") {
+            methodSpec("testOnlyMethod") {
+                addModifiers(STATIC)
+                addComment("This method is only called from androidTest sources!")
+            }
+        },
+        // Class that's only accessed from androidTest
+        kotlinFile("com.slack.keeper.sample", "TestOnlyKotlinClass") {
+            funSpec("testOnlyMethod") {
+                addComment("This method is only called from androidTest sources!")
+            }
+        },
+        // Class that's unused
+        javaFile("com.slack.keeper.sample", "UnusedClass") {
+            methodSpec("unusedMethod") {
+                addModifiers(STATIC)
+                addComment("This class and method are completely unused")
+            }
+        },
+    )
 
 private val ANDROID_TEST_SOURCES =
-  setOf(
-    // AndroidTest file that uses the TestOnlyClass
-    javaFile("com.slack.keeper.sample", "TestOnlyClassCaller") {
-      methodSpec("callTestOnlyMethod") {
-        addStatement(
-          "\$T.testOnlyMethod()",
-          ClassName.get("com.slack.keeper.sample", "TestOnlyClass"),
-        )
-      }
-    },
-    // AndroidTest file that uses the TestOnlyKotlinClass
-    kotlinFile("com.slack.keeper.sample", "TestOnlyKotlinClassCaller") {
-      funSpec("callTestOnlyMethod") {
-        addStatement(
-          "%T.testOnlyMethod()",
-          KpClassName("com.slack.keeper.sample", "TestOnlyKotlinClass"),
-        )
-      }
-    },
-  )
+    setOf(
+        // AndroidTest file that uses the TestOnlyClass
+        javaFile("com.slack.keeper.sample", "TestOnlyClassCaller") {
+            methodSpec("callTestOnlyMethod") {
+                addStatement(
+                    "\$T.testOnlyMethod()",
+                    ClassName.get("com.slack.keeper.sample", "TestOnlyClass"),
+                )
+            }
+        },
+        // AndroidTest file that uses the TestOnlyKotlinClass
+        kotlinFile("com.slack.keeper.sample", "TestOnlyKotlinClassCaller") {
+            funSpec("callTestOnlyMethod") {
+                addStatement(
+                    "%T.testOnlyMethod()",
+                    KpClassName("com.slack.keeper.sample", "TestOnlyKotlinClass"),
+                )
+            }
+        },
+    )
 
 // We include Unit.class here because that allows us to also test that App's transitive dependencies
 // are included in the jar and excluded from the androidTest jar (anything present in both is only
 // stored in the app jar). Unit is from the Kotlin stdlib.
 private val EXPECTED_APP_CLASSES: Set<String> =
-  MAIN_SOURCES.mapToSet { "${it.name}.class" } + "Unit.class"
+    MAIN_SOURCES.mapToSet { "${it.name}.class" } + "Unit.class"
 
 private val EXPECTED_ANDROID_TEST_CLASSES: Set<String> =
-  ANDROID_TEST_SOURCES.mapToSet { "${it.name}.class" }
+    ANDROID_TEST_SOURCES.mapToSet { "${it.name}.class" }
 
-private data class ProjectData(val dir: File, val proguardConfigOutput: File)
+private data class ProjectData(
+    val dir: File,
+    val proguardConfigOutput: File,
+)
 
 private fun prepareProject(temporaryFolder: TemporaryFolder, buildFileText: String): ProjectData {
-  // Create fixture
-  val projectDir = temporaryFolder.newFolder("testProject")
-  projectDir.newFile("build.gradle").apply { writeText(buildFileText) }
-  projectDir.newFile("proguard-test-rules.pro") { writeText(TEST_PROGUARD_RULES) }
-  projectDir.newFile("src/main/AndroidManifest.xml") {
-    writeText(
-      """
+    // Create fixture
+    val projectDir = temporaryFolder.newFolder("testProject")
+    projectDir.newFile("build.gradle").apply { writeText(buildFileText) }
+    projectDir.newFile("proguard-test-rules.pro") { writeText(TEST_PROGUARD_RULES) }
+    projectDir.newFile("src/main/AndroidManifest.xml") {
+        writeText(
+            """
       <?xml version="1.0" encoding="utf-8"?>
       <manifest>
         <application name="com.slack.keeper.sample.SampleApplication" />
       </manifest>
       """
-        .trimIndent()
-    )
-  }
+                .trimIndent(),
+        )
+    }
 
-  val mainSources = projectDir.newDir("src/main/java")
-  MAIN_SOURCES.forEach { mainSources += it }
+    val mainSources = projectDir.newDir("src/main/java")
+    MAIN_SOURCES.forEach { mainSources += it }
 
-  val androidTestSources = projectDir.newDir("src/androidTest/java")
-  ANDROID_TEST_SOURCES.forEach { androidTestSources += it }
+    val androidTestSources = projectDir.newDir("src/androidTest/java")
+    ANDROID_TEST_SOURCES.forEach { androidTestSources += it }
 
-  // To verify we correctly wired the generated rules into the minification task, we add a custom
-  // second proguard file that just specifies `-printconfiguration` pointing to an output file
-  // that we can read to verify our generated rules were added.
-  val proguardConfigOutput = projectDir.newFile("proguardConfigOutput.pro")
-  projectDir.newFile("testconfiguration.pro") {
-    writeText(
-      """
+    // To verify we correctly wired the generated rules into the minification task, we add a custom
+    // second proguard file that just specifies `-printconfiguration` pointing to an output file
+    // that we can read to verify our generated rules were added.
+    val proguardConfigOutput = projectDir.newFile("proguardConfigOutput.pro")
+    projectDir.newFile("testconfiguration.pro") {
+        writeText(
+            """
       -printconfiguration ${proguardConfigOutput.absolutePath}
       -keep class com.slack.keeper.sample.SampleApplication { *; }
       # Proguard complains about module-info classes in META-INF
       -ignorewarnings
       """
-        .trimIndent()
-    )
-  }
+                .trimIndent(),
+        )
+    }
 
-  return ProjectData(projectDir, proguardConfigOutput)
+    return ProjectData(projectDir, proguardConfigOutput)
 }
 
-private fun <T, R> Collection<T>.mapToSet(mapper: (T) -> R): Set<R> {
-  return mapTo(mutableSetOf(), mapper)
-}
+private fun <T, R> Collection<T>.mapToSet(mapper: (T) -> R): Set<R> = mapTo(mutableSetOf(), mapper)

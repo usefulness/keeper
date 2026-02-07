@@ -15,8 +15,7 @@
  */
 package com.slack.keeper
 
-import java.util.Locale
-import javax.inject.Inject
+import com.slack.keeper.KeeperPlugin.Companion.INTERMEDIATES_DIR
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.ConfigurableFileCollection
@@ -29,11 +28,14 @@ import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.jvm.toolchain.JavaLauncher
 import org.gradle.process.ExecOperations
+import javax.inject.Inject
 
 /**
  * Generates proguard keep rules from the generated [androidTestSourceJar] and [appTargetJar] tasks,
@@ -47,127 +49,137 @@ import org.gradle.process.ExecOperations
  * This task's output is finally used as an input into the app variant's proguard transform task.
  */
 @CacheableTask
-public abstract class InferAndroidTestKeepRules
-@Inject
-constructor(private val execOps: ExecOperations) : DefaultTask() {
+public abstract class InferAndroidTestKeepRules @Inject constructor(private val execOps: ExecOperations) : DefaultTask() {
 
-  init {
-    group = KEEPER_TASK_GROUP
-    description = "Infers keep rules based on target app APIs used from the androidTest classes"
-  }
-
-  @get:Classpath public abstract val androidTestSourceJar: RegularFileProperty
-
-  @get:Classpath public abstract val appTargetJar: RegularFileProperty
-
-  @get:Classpath public abstract val androidJar: RegularFileProperty
-
-  @get:Classpath @get:Optional public abstract val androidTestJar: RegularFileProperty
-
-  /**
-   * Optional custom jvm arguments to pass into the exec. Useful if you want to enable debugging in
-   * R8.
-   *
-   * Example: `listOf("-Xdebug", "-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y")`
-   */
-  @get:Input public abstract val jvmArgsProperty: ListProperty<String>
-
-  /**
-   * Enable more descriptive precondition checks in the CLI. If disabled, errors will be emitted to
-   * the generated proguard rules file instead.
-   */
-  @get:Input public abstract val enableAssertionsProperty: Property<Boolean>
-
-  /** @see TraceReferences.arguments */
-  @get:Input public abstract val traceReferencesArgs: ListProperty<String>
-
-  @get:Classpath @get:InputFiles public abstract val r8Program: ConfigurableFileCollection
-
-  @get:OutputFile public abstract val outputProguardRules: RegularFileProperty
-
-  @TaskAction
-  internal fun exec() {
-    // If you want to debug this, uncomment the below line and attach a remote debugger from a
-    // cloned R8 repo project.
-    var inputJvmArgs = emptyList<String>()
-    if (jvmArgsProperty.isPresent) {
-      val args = jvmArgsProperty.get()
-      if (args.isNotEmpty()) {
-        val argString = args.joinToString(", ", prefix = "[", postfix = "]")
-        logger.debug(
-          "Starting infer exec with jvmArgs $argString. If debugging, attach the debugger now."
-        )
-        inputJvmArgs = args
-      }
+    init {
+        group = KEEPER_TASK_GROUP
+        description = "Infers keep rules based on target app APIs used from the androidTest classes"
     }
 
-    execOps.javaexec {
-      classpath(r8Program)
-      jvmArgs(inputJvmArgs)
-      args(genTraceReferencesArgs())
-      enableAssertions = enableAssertionsProperty.get()
-      mainClass.set("com.android.tools.r8.tracereferences.TraceReferences")
-    }
-  }
+    @get:Classpath
+    public abstract val androidTestSourceJar: RegularFileProperty
 
-  private fun genTraceReferencesArgs(): List<String?> =
-    listOf<Pair<String, String?>>(
+    @get:Classpath
+    public abstract val appTargetJar: RegularFileProperty
+
+    @get:Classpath
+    public abstract val androidJar: RegularFileProperty
+
+    @get:Classpath
+    @get:Optional
+    public abstract val androidTestJar: RegularFileProperty
+
+    /**
+     * Optional custom jvm arguments to pass into the exec. Useful if you want to enable debugging in
+     * R8.
+     *
+     * Example: `listOf("-Xdebug", "-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y")`
+     */
+    @get:Input
+    public abstract val jvmArgsProperty: ListProperty<String>
+
+    /**
+     * Enable more descriptive precondition checks in the CLI. If disabled, errors will be emitted to
+     * the generated proguard rules file instead.
+     */
+    @get:Input
+    public abstract val enableAssertionsProperty: Property<Boolean>
+
+    /** @see TraceReferences.arguments */
+    @get:Input
+    public abstract val traceReferencesArgs: ListProperty<String>
+
+    @get:Nested
+    @get:Optional
+    public abstract val javaLauncher: Property<JavaLauncher>
+
+    @get:Classpath
+    @get:InputFiles
+    public abstract val r8Program: ConfigurableFileCollection
+
+    @get:OutputFile
+    public abstract val outputProguardRules: RegularFileProperty
+
+    @TaskAction
+    internal fun exec() {
+        // If you want to debug this, uncomment the below line and attach a remote debugger from a
+        // cloned R8 repo project.
+        var inputJvmArgs = emptyList<String>()
+        if (jvmArgsProperty.isPresent) {
+            val args = jvmArgsProperty.get()
+            if (args.isNotEmpty()) {
+                val argString = args.joinToString(", ", prefix = "[", postfix = "]")
+                logger.debug(
+                    "Starting infer exec with jvmArgs $argString. If debugging, attach the debugger now.",
+                )
+                inputJvmArgs = args
+            }
+        }
+
+        execOps.javaexec {
+            if (javaLauncher.isPresent) {
+                executable = javaLauncher.get().executablePath.asFile.absolutePath
+            }
+            classpath(r8Program)
+            jvmArgs(inputJvmArgs)
+            args(genTraceReferencesArgs())
+            enableAssertions = enableAssertionsProperty.get()
+            mainClass.set("com.android.tools.r8.tracereferences.TraceReferences")
+        }
+    }
+
+    private fun genTraceReferencesArgs(): List<String?> = listOf(
         "--keep-rules" to "",
         "--lib" to androidJar.get().asFile.absolutePath,
         "--lib" to androidTestJar.get().asFile.takeIf { it.exists() }?.absolutePath,
         "--target" to appTargetJar.get().asFile.absolutePath,
         "--source" to androidTestSourceJar.get().asFile.absolutePath,
         "--output" to outputProguardRules.get().asFile.absolutePath,
-      )
-      .map { if (it.second != null) listOf(it.first, it.second) else listOf() }
-      .reduce { acc, any -> acc + any }
-      // Add user provided args coming from TraceReferences.arguments after generated ones.
-      .plus(traceReferencesArgs.getOrElse(listOf()))
+    )
+        .map { if (it.second != null) listOf(it.first, it.second) else listOf() }
+        .reduce { acc, any -> acc + any }
+        // Add user provided args coming from TraceReferences.arguments after generated ones.
+        .plus(traceReferencesArgs.getOrElse(mutableListOf()))
 
-  public companion object {
-    @Suppress("LongParameterList")
-    public operator fun invoke(
-      variantName: String,
-      androidTestJarProvider: TaskProvider<out AndroidTestVariantClasspathJar>,
-      releaseClassesJarProvider: TaskProvider<out VariantClasspathJar>,
-      androidJar: Provider<RegularFile>,
-      androidTestJar: Provider<RegularFile>,
-      automaticallyAddR8Repo: Property<Boolean>,
-      enableAssertions: Property<Boolean>,
-      extensionJvmArgs: ListProperty<String>,
-      traceReferencesArgs: ListProperty<String>,
-      r8Configuration: Configuration,
-    ): InferAndroidTestKeepRules.() -> Unit = {
-      if (automaticallyAddR8Repo.get()) {
-        // This is the maven repo where r8 tagged releases are hosted. Only the r8 artifact is
-        // allowed to be fetched from this.
-        // Ideally we would tie the r8Configuration to this, but unfortunately Gradle doesn't
-        // support this yet.
-        with(project.repositories) {
-          // Limit this repo to only the R8 dependency
-          maven {
-            name = "R8 releases repository for use with Keeper"
-            setUrl("https://storage.googleapis.com/r8-releases/raw")
-            content { includeModule("com.android.tools", "r8") }
-          }
+    public companion object {
+
+        public operator fun invoke(
+            variantName: String,
+            androidTestJarProvider: TaskProvider<out AndroidTestVariantClasspathJar>,
+            releaseClassesJarProvider: TaskProvider<out VariantClasspathJar>,
+            androidJar: Provider<RegularFile>,
+            androidTestJar: Provider<RegularFile>,
+            automaticallyAddR8Repo: Property<Boolean>,
+            enableAssertions: Property<Boolean>,
+            extensionJvmArgs: ListProperty<String>,
+            traceReferencesArgs: ListProperty<String>,
+            r8Configuration: Configuration,
+        ): InferAndroidTestKeepRules.() -> Unit = {
+            if (automaticallyAddR8Repo.get()) {
+                // This is the maven repo where r8 tagged releases are hosted. Only the r8 artifact is
+                // allowed to be fetched from this.
+                // Ideally we would tie the r8Configuration to this, but unfortunately Gradle doesn't
+                // support this yet.
+                with(project.repositories) {
+                    // Limit this repo to only the R8 dependency
+                    maven {
+                        name = "R8 releases repository for use with Keeper"
+                        setUrl("https://storage.googleapis.com/r8-releases/raw")
+                        content { includeModule("com.android.tools", "r8") }
+                    }
+                }
+            }
+
+            androidTestSourceJar.set(androidTestJarProvider.flatMap { it.archiveFile })
+            appTargetJar.set(releaseClassesJarProvider.flatMap { it.archiveFile })
+            this.androidJar.set(androidJar)
+            this.androidTestJar.set(androidTestJar)
+            jvmArgsProperty.set(extensionJvmArgs)
+            this.traceReferencesArgs.set(traceReferencesArgs)
+            val inferredRulesPath = "$INTERMEDIATES_DIR/${variantName.replaceFirstChar(Char::uppercase)}/inferredKeepRules.pro"
+            outputProguardRules.set(project.layout.buildDirectory.file(inferredRulesPath))
+            r8Program.setFrom(r8Configuration)
+            enableAssertionsProperty.set(enableAssertions)
         }
-      }
-
-      androidTestSourceJar.set(androidTestJarProvider.flatMap { it.archiveFile })
-      appTargetJar.set(releaseClassesJarProvider.flatMap { it.archiveFile })
-      this.androidJar.set(androidJar)
-      this.androidTestJar.set(androidTestJar)
-      jvmArgsProperty.set(extensionJvmArgs)
-      this.traceReferencesArgs.set(traceReferencesArgs)
-      outputProguardRules.set(
-        project.layout.buildDirectory.file(
-          "${KeeperPlugin.INTERMEDIATES_DIR}/${
-          variantName.capitalize(Locale.US)
-          }/inferredKeepRules.pro"
-        )
-      )
-      r8Program.setFrom(r8Configuration)
-      enableAssertionsProperty.set(enableAssertions)
     }
-  }
 }

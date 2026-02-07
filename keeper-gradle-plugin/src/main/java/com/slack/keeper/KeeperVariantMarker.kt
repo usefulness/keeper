@@ -34,5 +34,5 @@ public object KeeperVariantMarker
 
 /** Shorthand to register Keeper on this variant. */
 public fun VariantBuilder.optInToKeeper() {
-  registerExtension(KeeperVariantMarker::class.java, KeeperVariantMarker)
+    registerExtension(KeeperVariantMarker::class.java, KeeperVariantMarker)
 }
