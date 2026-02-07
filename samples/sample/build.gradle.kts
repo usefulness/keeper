@@ -156,16 +156,13 @@ tasks.withType<InferAndroidTestKeepRules>().configureEach {
 
 tasks.register("validateL8") {
     dependsOn("l8DexDesugarLibExternalStaging")
-    val diagnosticFilePath =
-        "build/intermediates/keeper/l8-diagnostics/l8DexDesugarLibExternalStaging/patchedL8Rules.pro"
-    val diagnosticsFile = file(diagnosticFilePath)
+    val diagnosticFilePath = "intermediates/keeper/l8-diagnostics/l8DexDesugarLibExternalStaging/patchedL8Rules.pro"
+    val diagnosticsFile = layout.buildDirectory.file(diagnosticFilePath)
     doLast {
-        val diagnostics = diagnosticsFile.readText()
         println("Checking expected input rules from diagnostics output")
+        val diagnostics = diagnosticsFile.get().asFile.readText()
         if ("-keep class j\$.time.Instant" !in diagnostics) {
-            throw IllegalStateException(
-                "L8 diagnostic rules include the main variant's R8-generated rules, see $diagnosticFilePath",
-            )
+            throw IllegalStateException("L8 diagnostic rules include the main variant's R8-generated rules, see ${diagnosticsFile.get().asFile.path}")
         }
     }
 }

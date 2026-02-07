@@ -26,16 +26,13 @@ import com.android.build.gradle.internal.publishing.AndroidArtifacts
 import com.android.build.gradle.internal.publishing.AndroidArtifacts.ArtifactType
 import com.android.build.gradle.internal.tasks.L8DexDesugarLibTask
 import com.android.build.gradle.internal.tasks.R8Task
-import org.gradle.api.GradleException
+import com.android.tools.r8.L8
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
-import org.gradle.api.UnknownTaskException
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.util.GradleVersion
@@ -111,7 +108,7 @@ public class KeeperPlugin : Plugin<Project> {
      * the respective app and test [L8DexDesugarLibTask] tasks.
      *
      * By default, L8 will generate separate rules for test app and androidTest app L8 rules. This can
-     * cause problems in minified tests for a couple reasons though! This tries to resolve these via
+     * cause problems in minified tests for a couple of reasons though! This tries to resolve these via
      * two steps.
      *
      * Issue 1: L8 will try to minify the backported APIs otherwise and can result in conflicting
@@ -120,8 +117,8 @@ public class KeeperPlugin : Plugin<Project> {
      * can just disable it.
      *
      * Issue 2: L8 packages `j$` classes into androidTest but doesn't match what's in the target app.
-     * This causes confusion when invoking code in the target app from the androidTest classloader and
-     * it then can't find some expected `j$` classes. To solve this, we feed the the test app's
+     * This causes confusion when invoking code in the target app from the androidTest classloader, and
+     * it then can't find some expected `j$` classes. To solve this, we feed the test app's
      * generated `j$` rules in as inputs to the app L8 task's input rules.
      *
      * More details can be found here: https://issuetracker.google.com/issues/158018485
@@ -148,55 +145,59 @@ public class KeeperPlugin : Plugin<Project> {
                 // - Pipe its output keep rules into an intermediate mapped provider
                 // - Pipe those rules into app L8DexDesugarLibTask's keepRulesConfigurations
 
-                // namedLazy nesting here is unfortunate but necessary because these L8 tasks don't
-                // exist yet during this callback. https://issuetracker.google.com/issues/199509581
-                project.namedLazy<L8DexDesugarLibTask>(interpolateL8TaskName(testVariant.name)) { testL8Task ->
-                    project.namedLazy<L8DexDesugarLibTask>(interpolateL8TaskName(appVariant.name)) { appL8Task ->
-                        appL8Task.configure {
-                            keepRulesConfigurations.addAll(
-                                testL8Task.flatMap { it.keepRules }.map { it.asFile.readLines() },
-                            )
+                val testL8TaskName = interpolateL8TaskName(testVariant.name)
+                val appL8TaskName = interpolateL8TaskName(appVariant.name)
 
-                            // Diagnostics
-                            if (extension.emitDebugInformation.getOrElse(false)) {
-                                val taskName = name
-                                val diagnosticOutputDir =
-                                    project.layout.buildDirectory
-                                        .dir("$INTERMEDIATES_DIR/l8-diagnostics/$taskName")
-                                        .get()
-                                        .asFile
-                                doLast {
-                                    // We can't actually declare this because AGP's NonIncrementalTask will clear it
-                                    // during the task action
-                                    // outputs.dir(diagnosticOutputDir)
-                                    //     .withPropertyName("diagnosticsDir")
-                                    val outputFile = keepRules.asFile.get()
-                                    val mergedFilesContent =
-                                        "# Source: ${outputFile.absolutePath}\n${outputFile.readText()}"
+                project.tasks.named { it == testL8TaskName }.configureEach {
+                    this as L8DexDesugarLibTask
+                    project.tasks.named(appL8TaskName, L8DexDesugarLibTask::class.java) {
+                        keepRulesConfigurations.addAll(keepRules.map { it.asFile.readLines() })
+                    }
+                }
+                project.tasks.named { it == appL8TaskName }.configureEach {
+                    this as L8DexDesugarLibTask
 
-                                    val configurations =
-                                        keepRulesConfigurations.orNull
-                                            .orEmpty()
-                                            .joinToString("\n", prefix = "# Source: extra configurations\n")
+//                    keepRulesConfigurations.addAll(
+//                        project.tasks.named(testL8TaskName, L8DexDesugarLibTask::class.java).flatMap { it.keepRules }
+//                            .map { it.asFile.readLines() },
+//                    )
 
-                                    File(diagnosticOutputDir, "patchedL8Rules.pro")
-                                        .apply {
-                                            if (exists()) {
-                                                delete()
-                                            }
-                                            parentFile.mkdirs()
-                                            createNewFile()
-                                        }
-                                        .writeText("$mergedFilesContent\n$configurations")
+                    if (extension.emitDebugInformation.getOrElse(false)) {
+                        val diagnosticOutputDir = project.layout.buildDirectory
+                            .dir("$INTERMEDIATES_DIR/l8-diagnostics/$name")
+                        // We can't actually declare this because AGP's NonIncrementalTask will clear it
+                        // during the task action
+                        // outputs.dir(diagnosticOutputDir)
+                        //     .withPropertyName("diagnosticsDir")
+                        val appConfigurations = keepRulesConfigurations
+
+                        doLast {
+                            val outputFile = keepRules.asFile.get()
+                            val mergedFilesContent = "# Source: ${outputFile.absolutePath}\n${outputFile.readText()}"
+
+                            val configurations = appConfigurations.orNull
+                                .orEmpty()
+                                .joinToString("\n", prefix = "# Source: extra configurations\n")
+
+                            diagnosticOutputDir.get().asFile.resolve("patchedL8Rules.pro")
+                                .apply {
+                                    if (exists()) {
+                                        delete()
+                                    }
+                                    parentFile.mkdirs()
+                                    createNewFile()
                                 }
-                            }
+                                .writeText("$mergedFilesContent\n$configurations")
                         }
                     }
                 }
 
                 // Now clear the outputs from androidTest's L8 task to end with
-                project.namedLazy<L8DexDesugarLibTask>(interpolateL8TaskName(testVariant.name)) {
-                    it.configure { doLast { clearDir(desugarLibDex.asFile.get()) } }
+                project.tasks.named { it == testL8TaskName }.configureEach {
+                    doLast {
+                        this as L8DexDesugarLibTask
+                        clearDir(desugarLibDex.asFile.get())
+                    }
                 }
             }
         }
@@ -208,75 +209,66 @@ public class KeeperPlugin : Plugin<Project> {
         extension: KeeperExtension,
     ) {
         // Set up r8 configuration
-        val r8Configuration =
-            configurations.create(CONFIGURATION_NAME) {
-                description = "R8 dependencies for Keeper. This is used solely for the TraceReferences CLI"
-                @Suppress("DEPRECATION")
-                isVisible = false
-                isCanBeConsumed = false
-                isCanBeResolved = true
-                defaultDependencies {
-                    val defaultR8Version = VersionProperties().r8Version()
-                    logger.debug("keeper r8 default version: $defaultR8Version")
-                    add(project.dependencies.create("com.android.tools:r8:$defaultR8Version"))
-                }
+        val r8Configuration = configurations.create(CONFIGURATION_NAME) {
+            description = "R8 dependencies for Keeper. This is used solely for the TraceReferences CLI"
+            @Suppress("DEPRECATION")
+            isVisible = false
+            isCanBeConsumed = false
+            isCanBeResolved = true
+            defaultDependencies {
+                val defaultR8Version = VersionProperties().r8Version()
+                logger.debug("keeper r8 default version: $defaultR8Version")
+                add(project.dependencies.create("com.android.tools:r8:$defaultR8Version"))
             }
+        }
 
-        val androidJarRegularFileProvider =
-            layout.file(
-                provider {
-                    resolveAndroidEmbeddedJar(
-                        appExtension,
-                        appComponentsExtension,
-                        "android.jar",
-                        checkIfExisting = true,
-                    )
-                },
-            )
-        val androidTestJarRegularFileProvider =
-            layout.file(
-                provider {
-                    resolveAndroidEmbeddedJar(
-                        appExtension,
-                        appComponentsExtension,
-                        "optional/android.test.base.jar",
-                        checkIfExisting = false,
-                    )
-                },
-            )
+        val androidJarRegularFileProvider = layout.file(
+            provider {
+                resolveAndroidEmbeddedJar(
+                    appExtension,
+                    appComponentsExtension,
+                    "android.jar",
+                    checkIfExisting = true,
+                )
+            },
+        )
+        val androidTestJarRegularFileProvider = layout.file(
+            provider {
+                resolveAndroidEmbeddedJar(
+                    appExtension,
+                    appComponentsExtension,
+                    "optional/android.test.base.jar",
+                    checkIfExisting = false,
+                )
+            },
+        )
 
-        appComponentsExtension.onApplicableVariants(project, verifyMinification = true) {
-                testVariant,
-                appVariant,
-            ->
-            val intermediateAppJar =
-                createIntermediateAppJar(
-                    appVariant = appVariant,
-                    emitDebugInfo = extension.emitDebugInformation,
-                )
-            val intermediateAndroidTestJar =
-                createIntermediateAndroidTestJar(
-                    emitDebugInfo = extension.emitDebugInformation,
-                    testVariant = testVariant,
-                    appJarsProvider = intermediateAppJar.flatMap { it.appJarsFile },
-                )
-            val inferAndroidTestUsageProvider =
-                tasks.register(
-                    "infer${testVariant.name.replaceFirstChar(Char::uppercase)}KeepRulesForKeeper",
-                    InferAndroidTestKeepRules::class.java,
-                    InferAndroidTestKeepRules(
-                        variantName = testVariant.name,
-                        androidTestJarProvider = intermediateAndroidTestJar,
-                        releaseClassesJarProvider = intermediateAppJar,
-                        androidJar = androidJarRegularFileProvider,
-                        androidTestJar = androidTestJarRegularFileProvider,
-                        automaticallyAddR8Repo = extension.automaticR8RepoManagement,
-                        enableAssertions = extension.enableAssertions,
-                        extensionJvmArgs = extension.r8JvmArgs,
-                        traceReferencesArgs = extension.traceReferences.arguments,
-                        r8Configuration = r8Configuration,
-                    ),
-                )
+        appComponentsExtension.onApplicableVariants(project, verifyMinification = true) { testVariant, appVariant ->
+            val intermediateAppJar = createIntermediateAppJar(
+                appVariant = appVariant,
+                emitDebugInfo = extension.emitDebugInformation,
+            )
+            val intermediateAndroidTestJar = createIntermediateAndroidTestJar(
+                emitDebugInfo = extension.emitDebugInformation,
+                testVariant = testVariant,
+                appJarsProvider = intermediateAppJar.flatMap { it.appJarsFile },
+            )
+            val inferAndroidTestUsageProvider = tasks.register(
+                "infer${testVariant.name.replaceFirstChar(Char::uppercase)}KeepRulesForKeeper",
+                InferAndroidTestKeepRules::class.java,
+                InferAndroidTestKeepRules(
+                    variantName = testVariant.name,
+                    androidTestJarProvider = intermediateAndroidTestJar,
+                    releaseClassesJarProvider = intermediateAppJar,
+                    androidJar = androidJarRegularFileProvider,
+                    androidTestJar = androidTestJarRegularFileProvider,
+                    automaticallyAddR8Repo = extension.automaticR8RepoManagement,
+                    enableAssertions = extension.enableAssertions,
+                    extensionJvmArgs = extension.r8JvmArgs,
+                    traceReferencesArgs = extension.traceReferences.arguments,
+                    r8Configuration = r8Configuration,
+                ),
+            )
 
             val prop = layout.dir(inferAndroidTestUsageProvider.flatMap { it.outputProguardRules.asFile })
 
@@ -298,10 +290,9 @@ public class KeeperPlugin : Plugin<Project> {
         checkIfExisting: Boolean,
     ): File {
         val compileSdkVersion = appExtension.compileSdk ?: error("No compileSdkVersion found")
-        val file =
-            File(
-                "${appComponentsExtension.sdkComponents.sdkDirectory.get().asFile}/platforms/android-$compileSdkVersion/$path",
-            )
+        val file = File(
+            "${appComponentsExtension.sdkComponents.sdkDirectory.get().asFile}/platforms/android-$compileSdkVersion/$path",
+        )
         check(!checkIfExisting || file.exists()) {
             "No $path found! Expected to find it at: ${file.absolutePath}"
         }
@@ -410,34 +401,6 @@ private fun Configuration.artifactView(artifactType: ArtifactType): FileCollecti
     .artifactView { attributes { attribute(AndroidArtifacts.ARTIFACT_TYPE, artifactType.type) } }
     .artifacts
     .artifactFiles
-
-/**
- * Similar to [TaskContainer.named], but waits until the task is registered if it doesn't exist,
- * yet. If the task is never registered, then this method will throw an error after the
- * configuration phase.
- */
-private inline fun <reified T : Task> Project.namedLazy(targetName: String, crossinline action: (TaskProvider<T>) -> Unit) {
-    try {
-        action(tasks.named(targetName, T::class.java))
-        return
-    } catch (_: UnknownTaskException) {
-    }
-
-    var didRun = false
-
-    tasks.withType(T::class.java) {
-        if (name == targetName) {
-            action(tasks.named(name, T::class.java))
-            didRun = true
-        }
-    }
-
-    afterEvaluate {
-        if (!didRun) {
-            throw GradleException("Didn't find task $name with type ${T::class}.")
-        }
-    }
-}
 
 private fun clearDir(path: File) {
     if (!path.isDirectory) {
