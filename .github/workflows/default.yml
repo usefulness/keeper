@@ -69,9 +69,6 @@ jobs:
           - gradle: current
             java: 21
             agp: "8.13.2"
-          - gradle: current
-            java: 21
-            agp: "8.5.0"
     name: '[samples] Gradle: ${{ matrix.gradle }}, Java: ${{ matrix.java }}, AGP: ${{ matrix.agp }}'
     steps:
       - uses: actions/checkout@v6

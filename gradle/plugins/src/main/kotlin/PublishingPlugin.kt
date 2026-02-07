@@ -63,7 +63,7 @@ class PublishingPlugin : Plugin<Project> {
             website.set("https://github.com/usefulness/keeper/")
             vcsUrl.set("https://github.com/usefulness/keeper.git")
             plugins.configureEach { plugin ->
-                plugin.tags.set(listOf("android", "kotlin", "keeper", "proguard", "releese", "android-test"))
+                plugin.tags.set(listOf("android", "kotlin", "keeper", "proguard", "release", "android-test"))
                 plugin.description = "A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources."
             }
         }
