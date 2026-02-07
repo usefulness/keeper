@@ -33,7 +33,7 @@ dependencyResolutionManagement {
             exclusiveContent {
                 forRepository {
                     maven {
-                        url("https://storage.googleapis.com/r8-releases/raw")
+                        url = "https://storage.googleapis.com/r8-releases/raw"
                         content { includeModule("com.android.tools", "r8") }
                     }
                 }

@@ -48,7 +48,7 @@ internal fun File.generatedChild(path: String) = child("build", "intermediates",
 
 internal fun File.child(vararg path: String) = File(this, path.toList().joinToString(File.separator)).apply {
     check(exists()) {
-        "Child doesn't exist! Expected $this. Other files in this dir: ${parentFile.listFiles()}"
+        "Child doesn't exist! Expected $this. Other files in this dir: ${parentFile.listFiles().joinToString(separator = "\n") { it.path }}"
     }
 }
 
