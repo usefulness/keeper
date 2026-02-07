@@ -32,6 +32,11 @@ plugins {
     id("io.github.usefulness.keeper")
 }
 
+
+if (Version.ANDROID_GRADLE_PLUGIN_VERSION.startsWith("8.")) {
+    pluginManager.apply("org.jetbrains.kotlin.android")
+}
+
 android {
     compileSdk = 36
     namespace = "com.slack.keeper.sample"
@@ -203,7 +208,7 @@ fun R8Task.findOutputAccessorValue(): Provider<File> {
 
     error(
         "Unable to locate proguard configuration output via reflection. " +
-            "Tried property 'proguardConfigurationOutput' and method 'getProguardConfigurationOutput()' on ${this::class.java.name}."
+            "Tried property 'proguardConfigurationOutput' and method 'getProguardConfigurationOutput()' on ${this::class.java.name}.",
     )
 }
 
