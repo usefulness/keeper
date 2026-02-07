@@ -26,7 +26,6 @@ import com.android.build.gradle.internal.publishing.AndroidArtifacts
 import com.android.build.gradle.internal.publishing.AndroidArtifacts.ArtifactType
 import com.android.build.gradle.internal.tasks.L8DexDesugarLibTask
 import com.android.build.gradle.internal.tasks.R8Task
-import com.android.tools.r8.L8
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -148,20 +147,13 @@ public class KeeperPlugin : Plugin<Project> {
                 val testL8TaskName = interpolateL8TaskName(testVariant.name)
                 val appL8TaskName = interpolateL8TaskName(appVariant.name)
 
-                project.tasks.named { it == testL8TaskName }.configureEach {
-                    this as L8DexDesugarLibTask
-                    project.tasks.named(appL8TaskName, L8DexDesugarLibTask::class.java) {
-                        keepRulesConfigurations.addAll(keepRules.map { it.asFile.readLines() })
-                    }
+                val appTask = project.tasks.named { it == appL8TaskName }.withType(L8DexDesugarLibTask::class.java)
+
+                project.tasks.named { it == testL8TaskName }.withType(L8DexDesugarLibTask::class.java).configureEach {
+                    appTask.getByName(appL8TaskName).keepRulesConfigurations.set(keepRules.asFile.map { it.readLines() })
                 }
-                project.tasks.named { it == appL8TaskName }.configureEach {
-                    this as L8DexDesugarLibTask
 
-//                    keepRulesConfigurations.addAll(
-//                        project.tasks.named(testL8TaskName, L8DexDesugarLibTask::class.java).flatMap { it.keepRules }
-//                            .map { it.asFile.readLines() },
-//                    )
-
+                appTask.configureEach {
                     if (extension.emitDebugInformation.getOrElse(false)) {
                         val diagnosticOutputDir = project.layout.buildDirectory
                             .dir("$INTERMEDIATES_DIR/l8-diagnostics/$name")
