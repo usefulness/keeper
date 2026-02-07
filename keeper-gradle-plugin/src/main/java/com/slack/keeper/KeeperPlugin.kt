@@ -84,7 +84,7 @@ public class KeeperPlugin : Plugin<Project> {
     internal companion object {
         const val INTERMEDIATES_DIR = "intermediates/keeper"
         const val CONFIGURATION_NAME = "keeperR8"
-        private val MIN_GRADLE_VERSION = GradleVersion.version("8.0")
+        private val MIN_GRADLE_VERSION = GradleVersion.version("9.0.0")
 
         fun interpolateR8TaskName(variantName: String): String = "minify${variantName.replaceFirstChar(Char::uppercase)}WithR8"
 
@@ -420,7 +420,8 @@ private inline fun <reified T : Task> Project.namedLazy(targetName: String, cros
     try {
         action(tasks.named(targetName, T::class.java))
         return
-    } catch (_: UnknownTaskException) {}
+    } catch (_: UnknownTaskException) {
+    }
 
     var didRun = false
 

@@ -386,7 +386,7 @@ private fun buildGradleFile(
     emitDebugInformation: Boolean = true,
     extraDependencies: Map<String, String> = emptyMap(),
 ): String {
-    val testVariant = "$testFlavor${testBuildType.capitalize(Locale.US)}"
+    val testVariant = "$testFlavor${testBuildType.replaceFirstChar(Char::uppercase)}"
 
     // language=groovy
     val buildScript =
