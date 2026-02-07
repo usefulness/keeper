@@ -150,8 +150,8 @@ public class KeeperPlugin : Plugin<Project> {
 
                 appTask.configureEach {
                     keepRulesConfigurations.addAll(
-                        testTask.named(testL8TaskName).flatMap { it.keepRules.asFile }
-                            .map { it.readLines() },
+                        testTask.named(testL8TaskName).flatMap { it.keepRules }
+                            .map { it.asFile.readLines() },
                     )
 
                     if (extension.emitDebugInformation.getOrElse(false)) {
