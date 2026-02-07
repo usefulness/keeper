@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import com.android.Version
 import com.android.build.gradle.internal.tasks.R8Task
 import com.google.common.truth.Truth.assertThat
 import com.slack.keeper.InferAndroidTestKeepRules
 import com.slack.keeper.optInToKeeper
+import kotlin.reflect.KProperty1
 
 buildscript {
     dependencies {
@@ -167,10 +169,11 @@ tasks
     .withType<R8Task>()
     .matching { it.name == "minifyExternalStagingWithR8" }
     .configureEach {
+        val value = findOutputAccessorValue()
         doLast {
+
             println("Checking expected configuration contains embedded library rules from androidTest")
-            val output = getProguardConfigurationOutput()
-            val allConfigurations = output.get().readText()
+            val allConfigurations = value.get().readText()
             logger.lifecycle("Verifying R8 configuration contents")
             if ("-keep class slack.test.only.Android { *; }" !in allConfigurations) {
                 throw IllegalStateException(
@@ -184,6 +187,26 @@ tasks
             }
         }
     }
+
+@Suppress("UNCHECKED_CAST")
+fun R8Task.findOutputAccessorValue(): Provider<File> {
+    // 1) Try property: proguardConfigurationOutput
+    (this::class.members
+        .firstOrNull { it.name == "proguardConfigurationOutput" } as? KProperty1<Any, *>
+        )?.get(this)?.let { return (it as RegularFileProperty).asFile }
+
+    // 2) Try method: getProguardConfigurationOutput()
+    this::class.java.methods
+        .firstOrNull { it.name == "getProguardConfigurationOutput" && it.parameterCount == 0 }
+        ?.invoke(this)
+        ?.let { return (it as Provider<File>) }
+
+    error(
+        "Unable to locate proguard configuration output via reflection. " +
+            "Tried property 'proguardConfigurationOutput' and method 'getProguardConfigurationOutput()' on ${this::class.java.name}."
+    )
+}
+
 tasks.check {
     dependsOn("minifyExternalStagingWithR8")
     dependsOn("validateL8")

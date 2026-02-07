@@ -85,10 +85,10 @@ internal class KeeperFunctionalTest {
     fun standard() {
         val (projectDir, proguardConfigOutput) =
             prepareProject(
-                temporaryFolder,
-                buildGradleFile(
-                    "staging",
-                    "external",
+                temporaryFolder = temporaryFolder,
+                buildFileText = buildGradleFile(
+                    testBuildType = "staging",
+                    testFlavor = "external",
                     keeperExtraConfig = KeeperExtraConfig.TRACE_REFERENCES_ENABLED,
                 ),
             )
@@ -115,7 +115,7 @@ internal class KeeperFunctionalTest {
 
         // Assert we correctly generated rules
         val generatedRules =
-            projectDir.generatedChild("ExternalStagingAndroidTest/inferredKeepRules.pro")
+            projectDir.generatedChild("externalStagingAndroidTest/inferredKeepRules.pro")
         assertThat(generatedRules.readText().trim())
             .isEqualTo(
                 EXPECTED_TRACE_REFERENCES_CONFIG.map { indentRules(it.key, it.value) }

@@ -53,7 +53,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: error-report-${{ matrix.agp }}-${{ matrix.os }}
+          name: test-error-report-${{ matrix.os }}
           path: |
             keeper-gradle-plugin/build/reports
 

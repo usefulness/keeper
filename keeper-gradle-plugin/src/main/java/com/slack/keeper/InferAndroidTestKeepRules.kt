@@ -142,7 +142,7 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
         .plus(traceReferencesArgs.getOrElse(mutableListOf()))
 
     public companion object {
-        @Suppress("LongParameterList")
+
         public operator fun invoke(
             variantName: String,
             androidTestJarProvider: TaskProvider<out AndroidTestVariantClasspathJar>,
