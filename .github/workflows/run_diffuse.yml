@@ -39,7 +39,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - run: ./gradlew assemble
+      - run: ./gradlew assemble -PskipJarVersion
 
       - id: diffuse
         uses: usefulness/diffuse-action@master
