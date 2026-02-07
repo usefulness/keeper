@@ -12,11 +12,6 @@ concurrency:
   group: 'ci-${{ github.event.merge_group.head_ref || github.head_ref }}-${{ github.workflow }}'
   cancel-in-progress: true
 
-env:
-  # Test on API 30 because that's the first version with ATDs
-  API_LEVEL: '30'
-  AVD_TARGET: 'aosp_atd'
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -94,7 +89,7 @@ jobs:
 
       - name: Assemble instrumentation tests
         id: gradle-assemble-instrumentation
-        run: ./gradlew :sample:minifyExternalStagingWithR8 validateL8 -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --continue
+        run: ./gradlew :sample:minifyExternalStagingWithR8 validateL8 -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan --continue
         working-directory: samples
 
       - name: Enable KVM group perms
@@ -107,7 +102,7 @@ jobs:
         id: gradle-instrumentation-fork
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ env.API_LEVEL }}
+          api-level: 36
           arch: x86_64
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
@@ -124,7 +119,7 @@ jobs:
             
             # Now proceed, with much of the build being cached up to this point
             echo "Running instrumentation tests"
-            ./gradlew connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }}
+            ./gradlew connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan
             
             adb uninstall com.slack.keeper.sample || true
             adb uninstall com.slack.keeper.sample.androidTest || true

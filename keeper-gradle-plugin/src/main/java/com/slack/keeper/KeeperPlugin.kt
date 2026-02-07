@@ -133,10 +133,7 @@ public class KeeperPlugin : Plugin<Project> {
         appComponentsExtension: ApplicationAndroidComponentsExtension,
         extension: KeeperExtension,
     ) {
-        appComponentsExtension.onApplicableVariants(project, verifyMinification = false) {
-                testVariant,
-                appVariant,
-            ->
+        appComponentsExtension.onApplicableVariants(project, verifyMinification = false) { testVariant, appVariant ->
             // TODO ideally move to components entirely https://issuetracker.google.com/issues/199411020
             if (appExtension.compileOptions.isCoreLibraryDesugaringEnabled) {
                 // To support this, we need to:
@@ -150,6 +147,7 @@ public class KeeperPlugin : Plugin<Project> {
                 val appTask = project.tasks.named { it == appL8TaskName }.withType(L8DexDesugarLibTask::class.java)
 
                 project.tasks.named { it == testL8TaskName }.withType(L8DexDesugarLibTask::class.java).configureEach {
+                    dependsOn(appL8TaskName)
                     appTask.getByName(appL8TaskName).keepRulesConfigurations.set(keepRules.asFile.map { it.readLines() })
                 }
 
