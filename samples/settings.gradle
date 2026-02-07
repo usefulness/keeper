@@ -12,7 +12,7 @@ pluginManagement {
         def agpVersion = settings.agpVersion
         logger.quiet("AGP version=$agpVersion")
         resolutionStrategy.eachPlugin {
-            if (requested.id.id == "com.android.library") {
+            if (requested.id.id.startsWith("com.android")) {
                 useModule("com.android.tools.build:gradle:$agpVersion")
             }
         }
