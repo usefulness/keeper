@@ -96,9 +96,9 @@ internal class KeeperFunctionalTest {
         val result = projectDir.runAsWiredStaging()
 
         // Ensure the expected parameterized minifiers ran
-        assertThat(result.resultOf(interpolateR8TaskName("externalStaging")))
+        assertThat(result.resultOf(interpolateR8TaskName("ExternalStaging")))
             .isEqualTo(TaskOutcome.SUCCESS)
-        assertThat(result.resultOf(interpolateR8TaskName("externalStagingAndroidTest")))
+        assertThat(result.resultOf(interpolateR8TaskName("ExternalStagingAndroidTest")))
             .isEqualTo(TaskOutcome.SUCCESS)
 
         // Assert we correctly packaged app classes
@@ -114,8 +114,7 @@ internal class KeeperFunctionalTest {
         assertThat(androidTestClasses).containsNoneIn(EXPECTED_APP_CLASSES)
 
         // Assert we correctly generated rules
-        val generatedRules =
-            projectDir.generatedChild("externalStagingAndroidTest/inferredKeepRules.pro")
+        val generatedRules = projectDir.generatedChild("ExternalStagingAndroidTest/inferredKeepRules.pro")
         assertThat(generatedRules.readText().trim())
             .isEqualTo(
                 EXPECTED_TRACE_REFERENCES_CONFIG.map { indentRules(it.key, it.value) }
