@@ -157,10 +157,8 @@ public class KeeperPlugin : Plugin<Project> {
                     if (extension.emitDebugInformation.getOrElse(false)) {
                         val diagnosticOutputDir = project.layout.buildDirectory
                             .dir("$INTERMEDIATES_DIR/l8-diagnostics/$name")
-                        // We can't actually declare this because AGP's NonIncrementalTask will clear it
-                        // during the task action
-                        // outputs.dir(diagnosticOutputDir)
-                        //     .withPropertyName("diagnosticsDir")
+
+                        outputs.dir(diagnosticOutputDir).withPropertyName("diagnosticsDir")
                         val appConfigurations = keepRulesConfigurations
 
                         doLast {
