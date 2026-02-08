@@ -95,7 +95,6 @@ jobs:
         working-directory: samples
 
       - name: Assemble com.android.test tests
-        if: ${{ false }}
         run: ./gradlew :sample-test:check -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan --continue
         working-directory: samples
 
@@ -132,9 +131,8 @@ jobs:
             adb uninstall com.slack.keeper.sample.androidTest || true
             adb uninstall com.slack.keeper.test.sample || true
             
-            # Now proceed, with much of the build being cached up to this point
             echo "Running instrumentation tests for com.android.test"
-            # ./gradlew :sample-test:connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan
+            ./gradlew :sample-test:connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan
             
             adb uninstall com.slack.keeper.sample || true
             adb uninstall com.slack.keeper.test.sample || true

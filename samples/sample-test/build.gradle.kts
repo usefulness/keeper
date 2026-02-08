@@ -35,7 +35,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
     }
 
     // I know it looks like this shouldn't be necessary in the modern age of Kotlin Android
@@ -126,19 +125,6 @@ tasks.withType<InferAndroidTestKeepRules>().configureEach {
     }
 }
 
-tasks.register("validateL8") {
-    dependsOn("l8DexDesugarLibExternalStaging")
-    val diagnosticFilePath = "intermediates/keeper/l8-diagnostics/l8DexDesugarLibExternalStaging/patchedL8Rules.pro"
-    val diagnosticsFile = layout.buildDirectory.file(diagnosticFilePath)
-    doLast {
-        println("Checking expected input rules from diagnostics output")
-        val diagnostics = diagnosticsFile.get().asFile.readText()
-        if ("-keep class j$.time.Instant" !in diagnostics) {
-            throw IllegalStateException("L8 diagnostic rules include the main variant's R8-generated rules, see ${diagnosticsFile.get().asFile.path}")
-        }
-    }
-}
-
 tasks
     .withType<R8Task>()
     .matching { it.name == "minifyExternalStagingWithR8" }
@@ -188,8 +174,6 @@ tasks.check {
 }
 
 dependencies {
-    coreLibraryDesugaring(libs.desugarJdkLibs)
-
     implementation(project(":sample-libraries:a"))
     implementation(project(":sample-libraries:c"))
     implementation(libs.okio)

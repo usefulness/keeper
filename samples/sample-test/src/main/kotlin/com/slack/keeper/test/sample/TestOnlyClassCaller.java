@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slack.keeper.sample
+package com.slack.keeper.test.sample;
 
-/** AndroidTest file that uses the TestOnlyKotlinClass. */
-object TestOnlyKotlinClassCaller {
-    fun callTestOnlyMethod() {
-        TestOnlyKotlinClass.testOnlyMethod()
+import com.slack.keeper.sample.TestOnlyClass;
+
+/**
+ * AndroidTest file that uses the TestOnlyClass.
+ */
+public class TestOnlyClassCaller {
+    public static void callTestOnlyMethod() {
+        TestOnlyClass.testOnlyMethod();
     }
 }
