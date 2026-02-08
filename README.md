@@ -3,7 +3,7 @@
 
 A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources.
 
-### [slackhq.github.io/keeper](https://slackhq.github.io/keeper)
+### [usefulness.github.io/keeper](https://usefulness.github.io/keeper)
 
 License
 -------

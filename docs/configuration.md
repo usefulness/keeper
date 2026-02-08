@@ -92,7 +92,7 @@ This is probably the simplest approach, but not as dynamic as controlling the `t
 
 ```groovy
 if (!hasProperty("productionBuild")) {
-  apply plugin: "com.slack.keeper"
+  apply plugin: "io.github.usefulness.keeper"
 }
 ```
 

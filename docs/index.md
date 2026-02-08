@@ -28,7 +28,7 @@ Keeper can be consumed via regular gradle `plugins {}` block.
 ```kotlin
 plugins {
   id("com.android.application") // <- Keeper only works with com.android.application!
-  id("com.slack.keeper") version "x.y.z"
+  id("io.github.usefulness.keeper") version "x.y.z"
 }
 ```
 
@@ -55,7 +55,7 @@ buildscript {
 }
 
 apply plugin: "com.android.application" // <- Keeper only works with com.android.application!
-apply plugin: "com.slack.keeper"
+apply plugin: "io.github.usefulness.keeper"
 ```
 
 Full configuration defaults can be found on the [Configuration page](configuration.md).
