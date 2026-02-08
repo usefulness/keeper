@@ -153,7 +153,7 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
             enableAssertions: Property<Boolean>,
             extensionJvmArgs: ListProperty<String>,
             traceReferencesArgs: ListProperty<String>,
-            r8Configuration: Configuration,
+            r8Configuration: Provider<Configuration>,
         ): InferAndroidTestKeepRules.() -> Unit = {
             if (automaticallyAddR8Repo.get()) {
                 // This is the maven repo where r8 tagged releases are hosted. Only the r8 artifact is

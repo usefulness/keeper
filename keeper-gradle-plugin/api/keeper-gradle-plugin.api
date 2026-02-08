@@ -21,7 +21,7 @@ public abstract class com/slack/keeper/InferAndroidTestKeepRules : org/gradle/ap
 }
 
 public final class com/slack/keeper/InferAndroidTestKeepRules$Companion {
-	public final fun invoke (Ljava/lang/String;Lorg/gradle/api/tasks/TaskProvider;Lorg/gradle/api/tasks/TaskProvider;Lorg/gradle/api/provider/Provider;Lorg/gradle/api/provider/Provider;Lorg/gradle/api/provider/Property;Lorg/gradle/api/provider/Property;Lorg/gradle/api/provider/ListProperty;Lorg/gradle/api/provider/ListProperty;Lorg/gradle/api/artifacts/Configuration;)Lkotlin/jvm/functions/Function1;
+	public final fun invoke (Ljava/lang/String;Lorg/gradle/api/tasks/TaskProvider;Lorg/gradle/api/tasks/TaskProvider;Lorg/gradle/api/provider/Provider;Lorg/gradle/api/provider/Provider;Lorg/gradle/api/provider/Property;Lorg/gradle/api/provider/Property;Lorg/gradle/api/provider/ListProperty;Lorg/gradle/api/provider/ListProperty;Lorg/gradle/api/provider/Provider;)Lkotlin/jvm/functions/Function1;
 }
 
 public abstract class com/slack/keeper/KeeperExtension {

@@ -15,13 +15,17 @@
  */
 package com.slack.keeper
 
-import com.android.build.api.AndroidPluginVersion
 import com.android.build.api.artifact.ScopedArtifact
 import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.dsl.CommonExtension
+import com.android.build.api.dsl.TestExtension
+import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.AndroidTest
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.ApplicationVariant
+import com.android.build.api.variant.CanMinifyCode
 import com.android.build.api.variant.Component
+import com.android.build.api.variant.HasAndroidTest
 import com.android.build.api.variant.ScopedArtifacts
 import com.android.build.gradle.internal.publishing.AndroidArtifacts
 import com.android.build.gradle.internal.publishing.AndroidArtifacts.ArtifactType
@@ -88,18 +92,22 @@ public class KeeperPlugin : Plugin<Project> {
         fun interpolateL8TaskName(variantName: String): String = "l8DexDesugarLib${variantName.replaceFirstChar(Char::uppercase)}"
     }
 
-    override fun apply(project: Project) {
+    override fun apply(project: Project): Unit = with(project) {
         val gradleVersion = GradleVersion.version(project.gradle.gradleVersion)
         check(gradleVersion >= MIN_GRADLE_VERSION) {
             "Keeper requires Gradle ${MIN_GRADLE_VERSION.version} or later."
         }
-        project.pluginManager.withPlugin("com.android.application") {
-            val appExtension = project.extensions.getByType(ApplicationExtension::class.java)
-            val appComponentsExtension =
-                project.extensions.getByType(ApplicationAndroidComponentsExtension::class.java)
-            val extension = project.extensions.create("keeper", KeeperExtension::class.java)
-            project.configureKeepRulesGeneration(appExtension, appComponentsExtension, extension)
-            configureL8(project, appExtension, appComponentsExtension, extension)
+        pluginManager.withPlugin("com.android.application") {
+            val appExtension = extensions.getByType(ApplicationExtension::class.java)
+            val appComponentsExtension = extensions.getByType(ApplicationAndroidComponentsExtension::class.java)
+            val extension = extensions.create("keeper", KeeperExtension::class.java)
+            configureKeepRulesGeneration(appComponentsExtension, extension)
+            configureL8(appExtension, appComponentsExtension, extension)
+        }
+        pluginManager.withPlugin("com.android.test") {
+            val extension = extensions.create("keeper", KeeperExtension::class.java)
+
+            val testExtension = extensions.getByType(TestExtension::class.java)
         }
     }
 
@@ -128,13 +136,12 @@ public class KeeperPlugin : Plugin<Project> {
      * the source of truth. To force this, we simply clear all the generated output dex files from the
      * androidTest [L8DexDesugarLibTask] task.
      */
-    private fun configureL8(
-        project: Project,
-        appExtension: ApplicationExtension,
+    private fun Project.configureL8(
+        appExtension: CommonExtension,
         appComponentsExtension: ApplicationAndroidComponentsExtension,
         extension: KeeperExtension,
     ) {
-        appComponentsExtension.onApplicableVariants(project, verifyMinification = false) { testVariant, appVariant ->
+        appComponentsExtension.onApplicableVariants(this, verifyMinification = false) { testVariant, appVariant ->
             // TODO ideally move to components entirely https://issuetracker.google.com/issues/199411020
             if (appExtension.compileOptions.isCoreLibraryDesugaringEnabled) {
                 // To support this, we need to:
@@ -194,12 +201,11 @@ public class KeeperPlugin : Plugin<Project> {
     }
 
     private fun Project.configureKeepRulesGeneration(
-        appExtension: ApplicationExtension,
         appComponentsExtension: ApplicationAndroidComponentsExtension,
         extension: KeeperExtension,
     ) {
         // Set up r8 configuration
-        val r8Configuration = configurations.create(CONFIGURATION_NAME) {
+        val r8Configuration = configurations.register(CONFIGURATION_NAME) {
             description = "R8 dependencies for Keeper. This is used solely for the TraceReferences CLI"
             @Suppress("DEPRECATION")
             isVisible = false
@@ -212,26 +218,8 @@ public class KeeperPlugin : Plugin<Project> {
             }
         }
 
-        val androidJarRegularFileProvider = layout.file(
-            provider {
-                resolveAndroidEmbeddedJar(
-                    appExtension,
-                    appComponentsExtension,
-                    "android.jar",
-                    checkIfExisting = true,
-                )
-            },
-        )
-        val androidTestJarRegularFileProvider = layout.file(
-            provider {
-                resolveAndroidEmbeddedJar(
-                    appExtension,
-                    appComponentsExtension,
-                    "optional/android.test.base.jar",
-                    checkIfExisting = false,
-                )
-            },
-        )
+        val androidJarRegularFileProvider = resolveAndroidEmbeddedJar(path = "android.jar")
+        val androidTestJarRegularFileProvider = resolveAndroidEmbeddedJar(path = "optional/android.test.base.jar", checkIfExisting = false)
 
         appComponentsExtension.onApplicableVariants(project, verifyMinification = true) { testVariant, appVariant ->
             val intermediateAppJar = createIntermediateAppJar(
@@ -273,21 +261,18 @@ public class KeeperPlugin : Plugin<Project> {
         }
     }
 
-    private fun resolveAndroidEmbeddedJar(
-        appExtension: ApplicationExtension,
-        appComponentsExtension: ApplicationAndroidComponentsExtension,
-        path: String,
-        checkIfExisting: Boolean,
-    ): File {
-        val compileSdkVersion = appExtension.compileSdk ?: error("No compileSdkVersion found")
-        val file = File(
-            "${appComponentsExtension.sdkComponents.sdkDirectory.get().asFile}/platforms/android-$compileSdkVersion/$path",
-        )
-        check(!checkIfExisting || file.exists()) {
-            "No $path found! Expected to find it at: ${file.absolutePath}"
-        }
-        return file
+    private fun Project.resolveAndroidEmbeddedJar(path: String, checkIfExisting: Boolean = true): Provider<RegularFile> = provider {
+        val android = extensions.getByName("android") as CommonExtension
+        val androidComponents = extensions.getByName("androidComponents") as AndroidComponentsExtension<*, *, *>
+        val compileSdkVersion = android.compileSdk ?: error("No compileSdkVersion found")
+        val file = androidComponents.sdkComponents.sdkDirectory.get().asFile
+            .resolve("platforms/android-$compileSdkVersion/$path")
+
+        check(!checkIfExisting || file.exists()) { "No $path found! Expected to find it at: ${file.absolutePath}" }
+
+        file
     }
+        .let(layout::file)
 
     private fun ApplicationAndroidComponentsExtension.onApplicableVariants(
         project: Project,
