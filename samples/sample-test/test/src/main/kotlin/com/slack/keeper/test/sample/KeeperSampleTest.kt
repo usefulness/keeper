@@ -13,19 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slack.keeper.sample
+package com.slack.keeper.test.sample
 
-import com.slack.keeper.example.c.TestOnlyCClass
-import okio.ByteString
-import okio.ByteString.Companion.encodeUtf8
-import java.time.Duration
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.slack.keeper.example.a.AClass
+import org.junit.Test
+import org.junit.runner.RunWith
 
-object TestOnlyCClassCaller {
-    fun callCClass() {
-        // Duration usage to trigger L8, different than the L8 usage in the app.
-        val days = Duration.ofDays(1)
-        TestOnlyCClass.sampleMethod()
-        val byteString: ByteString = "Hello C caller! See you in $days day.".encodeUtf8()
-        println(byteString.hex())
+@RunWith(AndroidJUnit4::class)
+class KeeperSampleTest {
+
+    @Test
+    fun testFunctionKept() {
+        AClass.sampleMethod()
+        TestOnlyCClassCaller.callCClass()
+        TestOnlyClassCaller.callTestOnlyMethod()
+        TestOnlyKotlinClassCaller.callTestOnlyMethod()
     }
 }

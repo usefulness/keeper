@@ -3,6 +3,7 @@ maven-kotlin = "2.3.10"
 google-agp = "9.0.0"
 androidx-test = "1.7.0"
 java-target = "11"
+maven-usefulness-ktlint = "0.13.0"
 
 [libraries]
 androidx-annotation = "androidx.annotation:annotation:1.9.1"
@@ -18,3 +19,4 @@ okio = "com.squareup.okio:okio:3.16.4"
 [plugins]
 android-application = { id = "com.android.application", version.ref = "google-agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "maven-kotlin" }
+usefulness-ktlint = { id = "io.github.usefulness.ktlint-gradle-plugin", version.ref = "maven-usefulness-ktlint" }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slack.keeper.sample
+package com.slack.keeper.test.sample
 
 import com.slack.keeper.example.c.TestOnlyCClass
 import okio.ByteString

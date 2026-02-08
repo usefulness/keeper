@@ -13,19 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slack.keeper.test.sample
+package com.slack.keeper.sample
 
-import com.slack.keeper.example.c.TestOnlyCClass
-import java.time.Duration
-import okio.ByteString
-import okio.ByteString.Companion.encodeUtf8
-
-object TestOnlyCClassCaller {
-    fun callCClass() {
-        // Duration usage to trigger L8, different than the L8 usage in the app.
-        val days = Duration.ofDays(1)
-        TestOnlyCClass.sampleMethod()
-        val byteString: ByteString = "Hello C caller! See you in $days day.".encodeUtf8()
-        println(byteString.hex())
-    }
+/** Class that's only accessed from androidTest. */
+object TestOnlyKotlinClass {
+    fun testOnlyMethod() {}
 }

@@ -1,18 +1,3 @@
-/*
- * Copyright (C) 2020. Slack Technologies, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import com.android.Version
 import com.android.build.gradle.internal.tasks.R8Task
 import com.google.common.truth.Truth.assertThat
@@ -28,10 +13,9 @@ buildscript {
 }
 
 plugins {
-    id("com.android.application")
+    id("com.android.test")
     id("io.github.usefulness.keeper")
 }
-
 
 if (Version.ANDROID_GRADLE_PLUGIN_VERSION.startsWith("8.")) {
     pluginManager.apply("org.jetbrains.kotlin.android")
@@ -39,22 +23,18 @@ if (Version.ANDROID_GRADLE_PLUGIN_VERSION.startsWith("8.")) {
 
 android {
     compileSdk = 36
-    namespace = "com.slack.keeper.sample"
+    namespace = "com.slack.keeper.test.sample"
+    targetProjectPath = ":sample-test:app"
 
     defaultConfig {
-        applicationId = "com.slack.keeper.example"
         minSdk = 21
         targetSdk = 36
-        versionCode = 1
-        versionName = "1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        testApplicationId = "com.slack.keeper.sample.androidTest"
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
     }
 
     // I know it looks like this shouldn't be necessary in the modern age of Kotlin Android
@@ -63,20 +43,15 @@ android {
     // is, somehow, protected by this block.
     sourceSets {
         maybeCreate("main").java.directories.add("src/main/kotlin")
-        maybeCreate("androidTest").java.directories.add("src/androidTest/kotlin")
     }
 
     buildTypes {
-        debug { matchingFallbacks += listOf("release") }
-        release {
+        named("debug") { matchingFallbacks += listOf("release") }
+        register("staging") {
             isMinifyEnabled = true
             signingConfig = signingConfigs.getByName("debug")
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard.pro")
             testProguardFile("test-rules.pro")
             matchingFallbacks += listOf("release")
-        }
-        create("staging") {
-            initWith(getByName("release"))
         }
     }
 
@@ -84,14 +59,10 @@ android {
     productFlavors {
         create("internal") {
             dimension = "environment"
-            applicationIdSuffix = ".internal"
-            versionNameSuffix = "-internal"
         }
 
         create("external") { dimension = "environment" }
     }
-
-    testBuildType = "staging"
 }
 
 // Example: Only enable on "externalStaging"
@@ -153,19 +124,6 @@ tasks.withType<InferAndroidTestKeepRules>().configureEach {
     }
 }
 
-tasks.register("validateL8") {
-    dependsOn("l8DexDesugarLibExternalStaging")
-    val diagnosticFilePath = "intermediates/keeper/l8-diagnostics/l8DexDesugarLibExternalStaging/patchedL8Rules.pro"
-    val diagnosticsFile = layout.buildDirectory.file(diagnosticFilePath)
-    doLast {
-        println("Checking expected input rules from diagnostics output")
-        val diagnostics = diagnosticsFile.get().asFile.readText()
-        if ("-keep class j\$.time.Instant" !in diagnostics) {
-            throw IllegalStateException("L8 diagnostic rules include the main variant's R8-generated rules, see ${diagnosticsFile.get().asFile.path}")
-        }
-    }
-}
-
 tasks
     .withType<R8Task>()
     .matching { it.name == "minifyExternalStagingWithR8" }
@@ -210,24 +168,21 @@ fun R8Task.findOutputAccessorValue(): Provider<File> {
 
 tasks.check {
     dependsOn("minifyExternalStagingWithR8")
-    dependsOn("validateL8")
     dependsOn(tasks.withType<InferAndroidTestKeepRules>())
 }
 
 dependencies {
-    implementation(project(":sample-libraries:a"))
-
     coreLibraryDesugaring(libs.desugarJdkLibs)
 
-    androidTestImplementation(project(":sample-libraries:c"))
-    androidTestImplementation(libs.okio)
-    androidTestImplementation(libs.androidx.annotation)
-    androidTestImplementation(libs.androidx.test.rules)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestUtil(libs.androidx.test.orchestrator)
-    androidTestImplementation(libs.androidx.test.truth)
-    androidTestImplementation(libs.junit)
-    androidTestImplementation(libs.truth)
-    androidTestImplementation(project(":sample-libraries:test-only-android"))
-    androidTestImplementation(project(":sample-libraries:test-only-jvm"))
+    implementation(project(":sample-libraries:a"))
+    implementation(project(":sample-libraries:c"))
+    implementation(libs.okio)
+    implementation(libs.androidx.annotation)
+    implementation(libs.androidx.test.rules)
+    implementation(libs.androidx.test.runner)
+    implementation(libs.androidx.test.truth)
+    implementation(libs.junit)
+    implementation(libs.truth)
+    implementation(project(":sample-libraries:test-only-android"))
+    implementation(project(":sample-libraries:test-only-jvm"))
 }

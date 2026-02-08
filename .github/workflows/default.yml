@@ -90,12 +90,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - name: Assemble com.android.application tests
-        run: ./gradlew :sample-app:check -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan --continue
-        working-directory: samples
-
-      - name: Assemble com.android.test tests
-        run: ./gradlew :sample-test:check -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan --continue
+      - name: Pre-compile test tasks
+        run: ./gradlew check -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan --continue
         working-directory: samples
 
       - name: Enable KVM group perms
@@ -132,7 +128,7 @@ jobs:
             adb uninstall com.slack.keeper.test.sample || true
             
             echo "Running instrumentation tests for com.android.test"
-            ./gradlew :sample-test:connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan
+            ./gradlew :sample-test:test:connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan
             
             adb uninstall com.slack.keeper.sample || true
             adb uninstall com.slack.keeper.test.sample || true

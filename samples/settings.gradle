@@ -57,7 +57,8 @@ dependencyResolutionManagement {
 rootProject.name = "io.github.usefulness.keeper.sample"
 
 include(":sample-app")
-include(":sample-test")
+include(":sample-test:app")
+include(":sample-test:test")
 include(":sample-libraries:a")
 include(":sample-libraries:b")
 include(":sample-libraries:c")
