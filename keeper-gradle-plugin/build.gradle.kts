@@ -59,7 +59,6 @@ gradlePlugin {
         plugins.create("keeper") {
             id = "io.github.usefulness.keeper"
             implementationClass = "com.slack.keeper.KeeperPlugin"
-            displayName = "A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources."
         }
     }
 }
