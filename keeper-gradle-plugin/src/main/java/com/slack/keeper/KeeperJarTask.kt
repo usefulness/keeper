@@ -43,11 +43,14 @@ import org.gradle.api.tasks.TaskAction
 
 public abstract class KeeperJarTask : DefaultTask() {
 
-    @get:Input public abstract val emitDebugInfo: Property<Boolean>
+    @get:Input
+    public abstract val emitDebugInfo: Property<Boolean>
 
-    @get:OutputDirectory public abstract val diagnosticsOutputDir: DirectoryProperty
+    @get:OutputDirectory
+    public abstract val diagnosticsOutputDir: DirectoryProperty
 
-    @get:Classpath @get:InputFiles
+    @get:Classpath
+    @get:InputFiles
     public abstract val allDirectories: ListProperty<Directory>
 
     /**
@@ -94,9 +97,11 @@ public abstract class VariantClasspathJar : KeeperJarTask() {
         description = "Creates a fat jar of all the target app classes and its dependencies"
     }
 
-    @get:OutputFile public abstract val archiveFile: RegularFileProperty
+    @get:OutputFile
+    public abstract val archiveFile: RegularFileProperty
 
-    @get:OutputFile public abstract val appJarsFile: RegularFileProperty
+    @get:OutputFile
+    public abstract val appJarsFile: RegularFileProperty
 
     @TaskAction
     public fun createJar() {
@@ -139,8 +144,7 @@ public abstract class AndroidTestVariantClasspathJar : KeeperJarTask() {
 
     init {
         group = KEEPER_TASK_GROUP
-        description =
-            "Creates a fat jar of all the test app classes and its distinct dependencies from the target app dependencies"
+        description = "Creates a fat jar of all the test app classes and its distinct dependencies from the target app dependencies"
     }
 
     // Only care about the contents
@@ -148,7 +152,8 @@ public abstract class AndroidTestVariantClasspathJar : KeeperJarTask() {
     @get:InputFile
     public abstract val appJarsFile: RegularFileProperty
 
-    @get:OutputFile public abstract val archiveFile: RegularFileProperty
+    @get:OutputFile
+    public abstract val archiveFile: RegularFileProperty
 
     @TaskAction
     public fun createJar() {
