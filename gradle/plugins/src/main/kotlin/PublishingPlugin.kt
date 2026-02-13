@@ -16,7 +16,7 @@ class PublishingPlugin : Plugin<Project> {
 
         pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
             tasks.named("processResources", ProcessResources::class.java) { processResources ->
-                processResources.from(rootProject.file("LICENSE"))
+                processResources.from(rootProject.file("LICENSE.txt"))
             }
 
             tasks.named { it == "javadocJar" }.withType(Jar::class.java).configureEach { javadocJar ->
@@ -35,11 +35,11 @@ class PublishingPlugin : Plugin<Project> {
             pom { pom ->
                 pom.name.set("${project.group}:${project.name}")
                 pom.description.set(project.description)
-                pom.url.set("https://github.com/usefulness/ktlint-gradle-plugin")
+                pom.url.set("https://github.com/usefulness/keeper")
                 pom.licenses { licenses ->
                     licenses.license { license ->
                         license.name.set("Apache-2.0")
-                        license.url.set("https://github.com/usefulness/ktlint-gradle-plugin/blob/master/LICENSE")
+                        license.url.set("https://github.com/usefulness/keeper/blob/master/LICENSE.txt")
                     }
                 }
                 pom.developers { developers ->
@@ -47,10 +47,6 @@ class PublishingPlugin : Plugin<Project> {
                         developer.id.set("mateuszkwiecinski")
                         developer.name.set("Mateusz Kwiecinski")
                         developer.email.set("36954793+mateuszkwiecinski@users.noreply.github.com")
-                    }
-                    developers.developer { developer ->
-                        developer.id.set("jeremymailen")
-                        developer.name.set("Jeremy Mailen")
                     }
                 }
                 pom.scm { scm ->
