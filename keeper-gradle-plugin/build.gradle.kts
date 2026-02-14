@@ -105,6 +105,8 @@ tasks.named("processResources") {
     dependsOn("generateVersionProperties")
 }
 
+description = "A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources."
+
 dependencies {
     compileOnly(libs.kgp.api)
     compileOnly(libs.zipflinger)
