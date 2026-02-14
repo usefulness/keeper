@@ -61,7 +61,7 @@ class PublishingPlugin : Plugin<Project> {
             with(repositories) {
                 maven { maven ->
                     maven.name = "github"
-                    maven.setUrl("https://github.com/usefulness/keeper/")
+                    maven.setUrl("https://maven.pkg.github.com/usefulness/keeper")
                     with(maven.credentials) {
                         username = "usefulness"
                         password = findConfig("GITHUB_TOKEN")
