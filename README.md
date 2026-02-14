@@ -1,5 +1,8 @@
 🥅 Keeper
 ========
+[![Build Status](https://github.com/usefulness/keeper/actions/workflows/default.yml/badge.svg?branch=master)](https://github.com/usefulness/keeper/actions/workflows/default.yml)
+[![Latest Version](https://img.shields.io/maven-metadata/v/https/plugins.gradle.org/m2/io/github/usefulness/keeper/maven-metadata.xml?label=gradle)](https://plugins.gradle.org/plugin/io.github.usefulness.keeper)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.usefulness/keeper)
 
 A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources.
 
