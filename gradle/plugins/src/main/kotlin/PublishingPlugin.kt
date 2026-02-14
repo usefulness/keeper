@@ -76,7 +76,7 @@ class PublishingPlugin : Plugin<Project> {
                 plugins.configureEach { plugin ->
                     plugin.tags.set(listOf("android", "kotlin", "keeper", "proguard", "release", "android-test"))
                     plugin.description = "A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources."
-                    plugin.displayName = "A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources."
+                    plugin.displayName = plugin.description
                 }
             }
         }
