@@ -1,6 +1,6 @@
 [versions]
 maven-kotlin = "2.3.10"
-google-agp = "9.0.1"
+google-agp = "9.1.0"
 androidx-test = "1.7.0"
 java-target = "11"
 
