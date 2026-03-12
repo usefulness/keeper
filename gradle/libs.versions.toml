@@ -18,7 +18,7 @@ junit = "junit:junit:4.13.2"
 kgp-impl = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "maven-kotlin" }
 kgp-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "maven-kotlin" }
 kotlinpoet = "com.squareup:kotlinpoet:2.2.0"
-okio = "com.squareup.okio:okio:3.16.4"
+okio = "com.squareup.okio:okio:3.17.0"
 truth = "com.google.truth:truth:1.4.5"
 zipflinger = { module = "com.android:zipflinger", version.ref = "google-agp" }
 vanniktech-maven-publish = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "maven-vanniktech-publish" }
