@@ -5,7 +5,7 @@ gradle-starter = "0.94.0"
 java-compilation = "25"
 maven-vanniktech-publish = "0.36.0"
 maven-dokka = "2.2.0-Beta"
-gradle-pluginpublish = "2.0.0"
+gradle-pluginpublish = "2.1.1"
 maven-ktlint = "1.8.0"
 google-r8 = "8.13.19"
 
