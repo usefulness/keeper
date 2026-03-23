@@ -30,9 +30,9 @@ jobs:
           distribution: 'temurin'
           java-version-file: .java-version
 
-      - uses: gradle/actions/wrapper-validation@v5
+      - uses: gradle/actions/wrapper-validation@v6
 
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
 
       - run: ./gradlew projectCodestyle --scan
 
@@ -81,14 +81,14 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
 
-      - uses: gradle/actions/wrapper-validation@v5
+      - uses: gradle/actions/wrapper-validation@v6
 
       - id: agp-version-finder
         uses: usefulness/agp-version-finder-action@v1
         with:
           version-to-resolve: ${{ matrix.agp }}
 
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Assemble instrumentation tests
         id: gradle-assemble-instrumentation
