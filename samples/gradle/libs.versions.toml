@@ -5,7 +5,7 @@ androidx-test = "1.7.0"
 java-target = "11"
 
 [libraries]
-androidx-annotation = "androidx.annotation:annotation:1.9.1"
+androidx-annotation = "androidx.annotation:annotation:1.10.0"
 androidx-test-orchestrator = "androidx.test:orchestrator:1.6.1"
 androidx-test-rules = { module = "androidx.test:rules", version = "1.7.0" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
