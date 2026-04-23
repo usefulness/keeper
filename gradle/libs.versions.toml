@@ -1,6 +1,6 @@
 [versions]
 google-agp = "9.0.1"
-maven-kotlin = "2.3.10"
+maven-kotlin = "2.3.21"
 gradle-starter = "0.94.0"
 java-compilation = "25"
 maven-vanniktech-publish = "0.36.0"
