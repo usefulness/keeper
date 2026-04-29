@@ -39,7 +39,11 @@ kotlin {
 }
 
 tasks.withType<Test>().configureEach {
-    beforeTest(closureOf<TestDescriptor> { logger.lifecycle("Running test: $this") })
+    addTestListener(
+        object : TestListener {
+            override fun beforeTest(testDescriptor: TestDescriptor?) = logger.lifecycle("Running test: $testDescriptor")
+        },
+    )
     // Required to test configuration cache in tests when using withDebug()
     // https://github.com/gradle/gradle/issues/22765#issuecomment-1339427241
     jvmArgs(
