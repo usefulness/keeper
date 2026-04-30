@@ -19,6 +19,7 @@ import com.google.common.truth.Truth.assertThat
 import com.slack.keeper.InferAndroidTestKeepRules
 import com.slack.keeper.optInToKeeper
 import kotlin.reflect.KProperty1
+import org.gradle.util.GradleVersion
 
 buildscript {
     dependencies {
@@ -70,6 +71,7 @@ android {
         debug { matchingFallbacks += listOf("release") }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("debug")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard.pro")
             testProguardFile("test-rules.pro")
@@ -156,11 +158,22 @@ tasks.withType<InferAndroidTestKeepRules>().configureEach {
 
 tasks.register("validateL8") {
     dependsOn("l8DexDesugarLibExternalStaging")
-    val diagnosticFilePath = "intermediates/keeper/l8-diagnostics/l8DexDesugarLibExternalStaging/patchedL8Rules.pro"
+    dependsOn("l8DexDesugarLibExternalStagingAndroidTest")
+    val keeperUsesAndroidTestL8Rules = GradleVersion.version(Version.ANDROID_GRADLE_PLUGIN_VERSION.substringBefore("-")) >=
+        GradleVersion.version("9.1.0")
+    val diagnosticTaskName = if (keeperUsesAndroidTestL8Rules) {
+        "l8DexDesugarLibExternalStagingAndroidTest"
+    } else {
+        "l8DexDesugarLibExternalStaging"
+    }
+    val diagnosticFilePath = "intermediates/keeper/l8-diagnostics/$diagnosticTaskName/patchedL8Rules.pro"
     val diagnosticsFile = layout.buildDirectory.file(diagnosticFilePath)
     doLast {
         println("Checking expected input rules from diagnostics output")
         val diagnostics = diagnosticsFile.get().asFile.readText()
+        if ("-keep class j\$.time.Duration" !in diagnostics) {
+            throw IllegalStateException("L8 diagnostic rules include androidTest desugar usages, see ${diagnosticsFile.get().asFile.path}")
+        }
         if ("-keep class j\$.time.Instant" !in diagnostics) {
             throw IllegalStateException("L8 diagnostic rules include the main variant's R8-generated rules, see ${diagnosticsFile.get().asFile.path}")
         }
