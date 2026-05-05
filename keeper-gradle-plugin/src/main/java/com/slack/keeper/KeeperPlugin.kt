@@ -148,12 +148,31 @@ public class KeeperPlugin : Plugin<Project> {
                 val appTask = project.tasks.named { it == appL8TaskName }.withType(L8DexDesugarLibTask::class.java)
                 val testTask = project.tasks.named { it == testL8TaskName }.withType(L8DexDesugarLibTask::class.java)
 
-                appTask.configureEach {
-                    keepRulesConfigurations.addAll(
-                        testTask.named(testL8TaskName).flatMap { it.keepRules }
-                            .map { it.asFile.readLines() },
-                    )
+                if (appComponentsExtension.pluginVersion < AndroidPluginVersion(9, 1)) {
+                    appTask.configureEach {
+                        keepRulesConfigurations.addAll(
+                            testTask.named(testL8TaskName).flatMap { it.keepRules }
+                                .map { it.asFile.readLines() },
+                        )
+                    }
 
+                    // Now clear the outputs from androidTest's L8 task to end with
+                    testTask.configureEach {
+                        doLast {
+                            this as L8DexDesugarLibTask
+                            clearDir(desugarLibDex.asFile.get())
+                        }
+                    }
+                } else {
+                    testTask.configureEach {
+                        keepRulesConfigurations.addAll(
+                            appTask.named(appL8TaskName).flatMap { it.keepRules }
+                                .map { it.asFile.readLines() },
+                        )
+                    }
+                }
+
+                appTask.configureEach {
                     if (extension.emitDebugInformation.getOrElse(false)) {
                         val diagnosticOutputDir = project.layout.buildDirectory
                             .dir("$INTERMEDIATES_DIR/l8-diagnostics/$name")
@@ -182,11 +201,32 @@ public class KeeperPlugin : Plugin<Project> {
                     }
                 }
 
-                // Now clear the outputs from androidTest's L8 task to end with
                 testTask.configureEach {
-                    doLast {
-                        this as L8DexDesugarLibTask
-                        clearDir(desugarLibDex.asFile.get())
+                    if (extension.emitDebugInformation.getOrElse(false)) {
+                        val diagnosticOutputDir = project.layout.buildDirectory
+                            .dir("$INTERMEDIATES_DIR/l8-diagnostics/$name")
+
+                        outputs.dir(diagnosticOutputDir).withPropertyName("diagnosticsDir")
+                        val testConfigurations = keepRulesConfigurations
+
+                        doLast {
+                            val outputFile = keepRules.asFile.get()
+                            val mergedFilesContent = "# Source: ${outputFile.absolutePath}\n${outputFile.readText()}"
+
+                            val configurations = testConfigurations.orNull
+                                .orEmpty()
+                                .joinToString("\n", prefix = "# Source: extra configurations\n")
+
+                            diagnosticOutputDir.get().asFile.resolve("patchedL8Rules.pro")
+                                .apply {
+                                    if (exists()) {
+                                        delete()
+                                    }
+                                    parentFile.mkdirs()
+                                    createNewFile()
+                                }
+                                .writeText("$mergedFilesContent\n$configurations")
+                        }
                     }
                 }
             }
