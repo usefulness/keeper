@@ -1,5 +1,5 @@
 [versions]
-maven-kotlin = "2.3.21"
+maven-kotlin = "2.4.0"
 google-agp = "9.2.0"
 androidx-test = "1.7.0"
 java-target = "11"
