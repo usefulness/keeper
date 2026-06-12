@@ -85,6 +85,10 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
     @get:Input
     public abstract val enableAssertionsProperty: Property<Boolean>
 
+    /** @see KeeperExtension.allowAccessModification */
+    @get:Input
+    public abstract val allowAccessModification: Property<Boolean>
+
     /** @see TraceReferences.arguments */
     @get:Input
     public abstract val traceReferencesArgs: ListProperty<String>
@@ -126,6 +130,18 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
             enableAssertions = enableAssertionsProperty.get()
             mainClass.set("com.android.tools.r8.tracereferences.TraceReferences")
         }
+
+        if (allowAccessModification.get()) {
+            val rulesFile = outputProguardRules.get().asFile
+            val rewritten = rulesFile.readLines().joinToString(separator = "\n", postfix = "\n") { line ->
+                if (line.startsWith("-keep ")) {
+                    line.replaceFirst("-keep ", "-keep,allowaccessmodification ")
+                } else {
+                    line
+                }
+            }
+            rulesFile.writeText(rewritten)
+        }
     }
 
     private fun genTraceReferencesArgs(): List<String?> = listOf(
@@ -153,6 +169,7 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
             enableAssertions: Property<Boolean>,
             extensionJvmArgs: ListProperty<String>,
             traceReferencesArgs: ListProperty<String>,
+            allowAccessModification: Property<Boolean>,
             r8Configuration: Configuration,
         ): InferAndroidTestKeepRules.() -> Unit = {
             if (automaticallyAddR8Repo.get()) {
@@ -176,6 +193,7 @@ public abstract class InferAndroidTestKeepRules @Inject constructor(private val 
             this.androidTestJar.set(androidTestJar)
             jvmArgsProperty.set(extensionJvmArgs)
             this.traceReferencesArgs.set(traceReferencesArgs)
+            this.allowAccessModification.set(allowAccessModification)
             val inferredRulesPath = "$INTERMEDIATES_DIR/${variantName.replaceFirstChar(Char::uppercase)}/inferredKeepRules.pro"
             outputProguardRules.set(project.layout.buildDirectory.file(inferredRulesPath))
             r8Program.setFrom(r8Configuration)

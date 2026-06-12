@@ -42,6 +42,17 @@ public abstract class KeeperExtension @Inject constructor(objects: ObjectFactory
     public val emitDebugInformation: Property<Boolean> =
         objects.property(Boolean::class.java).convention(false)
 
+    /**
+     * Controls whether inferred keep rules carry the `allowaccessmodification` modifier. The
+     * androidTest classes only link against the kept names, so widening access is safe and lets R8
+     * repackage related classes without producing invalid hierarchies (e.g. a repackaged class
+     * extending a kept package-private one, which fails with [IllegalAccessError] at runtime).
+     * Recommended when the app build uses `-allowaccessmodification` (e.g. via
+     * `proguard-android-optimize.txt`). Default is false.
+     */
+    public val allowAccessModification: Property<Boolean> =
+        objects.property(Boolean::class.java).convention(false)
+
     /** Controls whether or not to enable assertions in the JavaExec run of R8. Default is true. */
     public val enableAssertions: Property<Boolean> =
         objects.property(Boolean::class.java).convention(true)

@@ -256,6 +256,7 @@ public class KeeperPlugin : Plugin<Project> {
                     enableAssertions = extension.enableAssertions,
                     extensionJvmArgs = extension.r8JvmArgs,
                     traceReferencesArgs = extension.traceReferences.arguments,
+                    allowAccessModification = extension.allowAccessModification,
                     r8Configuration = r8Configuration,
                 ),
             )
