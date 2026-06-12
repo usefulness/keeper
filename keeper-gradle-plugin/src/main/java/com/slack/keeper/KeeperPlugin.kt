@@ -148,6 +148,27 @@ public class KeeperPlugin : Plugin<Project> {
                 val appTask = project.tasks.named { it == appL8TaskName }.withType(L8DexDesugarLibTask::class.java)
                 val testTask = project.tasks.named { it == testL8TaskName }.withType(L8DexDesugarLibTask::class.java)
 
+                val agpWithL8MappingTransform = AndroidPluginVersion(9, 1).alpha(1)
+                if (appComponentsExtension.pluginVersion >= agpWithL8MappingTransform) {
+                    // Since AGP 9.1, the app L8 task appends desugared-library entries to the final
+                    // obfuscation mapping artifact, so the androidTest R8 task's testedMappingFile
+                    // depends on the app L8 task. Combined with the keep rules piping below
+                    // (app L8 <- test L8 <- test R8) that forms a task cycle. Point testedMappingFile
+                    // back at the mapping produced directly by the app R8 task (the pre-AGP-9.1
+                    // behavior) - the j$ classes shared with the androidTest APK are kept
+                    // un-obfuscated by the merged L8 keep rules, so their entries aren't needed.
+                    val appR8TaskName = interpolateR8TaskName(appVariant.name)
+                    val testR8TaskName = interpolateR8TaskName(testVariant.name)
+                    val appR8Task = project.tasks.named { it == appR8TaskName }.withType(R8Task::class.java)
+                    // Deferred so the setFrom() lands after AGP's own testedMappingFile wiring,
+                    // which is added later than this variant callback.
+                    project.afterEvaluate {
+                        project.tasks.named { it == testR8TaskName }.withType(R8Task::class.java).configureEach {
+                            testedMappingFile.setFrom(appR8Task.named(appR8TaskName).flatMap { it.mappingFile })
+                        }
+                    }
+                }
+
                 appTask.configureEach {
                     keepRulesConfigurations.addAll(
                         testTask.named(testL8TaskName).flatMap { it.keepRules }
@@ -256,6 +277,7 @@ public class KeeperPlugin : Plugin<Project> {
                     enableAssertions = extension.enableAssertions,
                     extensionJvmArgs = extension.r8JvmArgs,
                     traceReferencesArgs = extension.traceReferences.arguments,
+                    allowAccessModification = extension.allowAccessModification,
                     r8Configuration = r8Configuration,
                 ),
             )
