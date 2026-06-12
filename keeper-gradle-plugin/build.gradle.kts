@@ -99,14 +99,13 @@ if (project.hasProperty("skipJarVersion")) {
     }
 }
 
-tasks.register<WriteProperties>("generateVersionProperties") {
-    val propertiesFile = File(sourceSets.main.get().output.resourcesDir, "keeper-gradle-plugin.properties")
-    destinationFile = propertiesFile
+val generateVersionProperties = tasks.register<WriteProperties>("generateVersionProperties") {
+    destinationFile = layout.buildDirectory.file("generated/keeper-version/keeper-gradle-plugin.properties")
     property("keeper.r8_version", libs.versions.google.r8.get())
 }
 
-tasks.named("processResources") {
-    dependsOn("generateVersionProperties")
+tasks.named<ProcessResources>("processResources") {
+    from(generateVersionProperties)
 }
 
 description = "A Gradle plugin that infers Proguard/R8 keep rules for androidTest sources."
