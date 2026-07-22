@@ -1,3 +1,4 @@
+import com.android.Version
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePlugin
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -7,6 +8,13 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     id("io.github.usefulness.keeper") apply false
 }
+
+// AGP versions before 8.13 can't resolve minor-versioned SDK platforms (e.g. android-37.0),
+// and SDK 37 only ships in that scheme.
+ext.sampleCompileSdk = {
+    def agpParts = Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')
+    return (agpParts[0].toInteger() > 8 || agpParts[1].toInteger() >= 13) ? 37 : 36
+}()
 
 subprojects {
     pluginManager.withPlugin("java") {
