@@ -61,7 +61,7 @@ jobs:
         java: [ 25 ]
         agp: [ stable, beta, alpha ]
         include:
-          - gradle: current
+          - gradle: "9.5.0"
             java: 21
             agp: "8.13.2"
           - gradle: current
