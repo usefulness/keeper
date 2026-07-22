@@ -32,7 +32,7 @@ jobs:
 
       - uses: gradle/actions/wrapper-validation@v6
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: platforms;android-37
 
@@ -98,7 +98,7 @@ jobs:
         with:
           version-to-resolve: ${{ matrix.agp }}
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: platforms;android-37
 
