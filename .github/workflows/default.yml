@@ -32,6 +32,10 @@ jobs:
 
       - uses: gradle/actions/wrapper-validation@v6
 
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-37
+
       - uses: gradle/actions/setup-gradle@v6
 
       - run: ./gradlew projectCodestyle --scan
@@ -93,6 +97,10 @@ jobs:
         uses: usefulness/agp-version-finder-action@v1
         with:
           version-to-resolve: ${{ matrix.agp }}
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-37
 
       - uses: gradle/actions/setup-gradle@v6
 
