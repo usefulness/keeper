@@ -43,7 +43,8 @@ android {
 
     defaultConfig {
         applicationId = "com.slack.keeper.example"
-        minSdk = 29
+        // Must stay below 26 so java.time gets desugared, which validateL8 relies on
+        minSdk = 21
         targetSdk = 37
         versionCode = 1
         versionName = "1"
