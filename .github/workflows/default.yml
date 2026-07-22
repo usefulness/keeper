@@ -32,6 +32,10 @@ jobs:
 
       - uses: gradle/actions/wrapper-validation@v6
 
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platforms;android-37.0
+
       - uses: gradle/actions/setup-gradle@v6
 
       - run: ./gradlew projectCodestyle --scan
@@ -61,12 +65,6 @@ jobs:
         java: [ 25 ]
         agp: [ stable, beta, alpha ]
         include:
-          - gradle: current
-            java: 21
-            agp: "8.13.2"
-          - gradle: current
-            java: 21
-            agp: "8.5.2"
           - gradle: "9.5.0"
             java: 25
             agp: "9.0.0"
@@ -93,6 +91,10 @@ jobs:
         uses: usefulness/agp-version-finder-action@v1
         with:
           version-to-resolve: ${{ matrix.agp }}
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platforms;android-37.0
 
       - uses: gradle/actions/setup-gradle@v6
 

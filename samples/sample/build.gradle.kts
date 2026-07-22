@@ -38,13 +38,13 @@ if (Version.ANDROID_GRADLE_PLUGIN_VERSION.startsWith("8.")) {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
     namespace = "com.slack.keeper.sample"
 
     defaultConfig {
         applicationId = "com.slack.keeper.example"
         minSdk = 21
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
