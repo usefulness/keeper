@@ -38,14 +38,13 @@ if (Version.ANDROID_GRADLE_PLUGIN_VERSION.startsWith("8.")) {
 }
 
 android {
-    compileSdk = rootProject.extra["sampleCompileSdk"] as Int
+    compileSdk = 37
     namespace = "com.slack.keeper.sample"
 
     defaultConfig {
         applicationId = "com.slack.keeper.example"
-        // Must stay below 26 so java.time gets desugared, which validateL8 relies on
         minSdk = 21
-        targetSdk = rootProject.extra["sampleCompileSdk"] as Int
+        targetSdk = 37
         versionCode = 1
         versionName = "1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

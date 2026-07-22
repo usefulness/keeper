@@ -303,13 +303,12 @@ public class KeeperPlugin : Plugin<Project> {
     ): File {
         val compileSdkVersion = appExtension.compileSdk ?: error("No compileSdkVersion found")
         val platformsDir = File(appComponentsExtension.sdkComponents.sdkDirectory.get().asFile, "platforms")
-        // Since Android 17 (API 37), platforms may ship as minor-versioned directories (e.g. "android-37.0")
-        // with no plain "android-37" directory present.
+        // Platforms may ship as minor-versioned directories only (e.g. "android-37.0")
         val platformDir = File(platformsDir, "android-$compileSdkVersion").takeIf(File::exists)
             ?: platformsDir.listFiles()
                 .orEmpty()
                 .filter { it.name.matches(Regex("android-$compileSdkVersion\\.\\d+")) }
-                .maxByOrNull { it.name.substringAfterLast('.').toInt() }
+                .maxByOrNull { it.name.substringAfterLast('.').toIntOrNull() ?: -1 }
             ?: File(platformsDir, "android-$compileSdkVersion")
         val file = File(platformDir, path)
         check(!checkIfExisting || file.exists()) {

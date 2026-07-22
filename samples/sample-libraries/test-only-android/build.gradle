@@ -19,7 +19,7 @@ plugins {
 }
 
 android {
-    compileSdk = rootProject.sampleCompileSdk
+    compileSdk = 37
     namespace = "com.slack.keeper.sample.testonlyandroid"
 
     defaultConfig {

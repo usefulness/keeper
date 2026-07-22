@@ -66,12 +66,6 @@ jobs:
         agp: [ stable, beta, alpha ]
         include:
           - gradle: "9.5.0"
-            java: 21
-            agp: "8.13.2"
-          - gradle: "9.5.0"
-            java: 21
-            agp: "8.5.2"
-          - gradle: "9.5.0"
             java: 25
             agp: "9.0.0"
           - gradle: "9.5.0"
@@ -103,12 +97,10 @@ jobs:
           packages: platforms;android-37.0
 
       - uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: ${{ matrix.gradle }}
 
       - name: Assemble instrumentation tests
         id: gradle-assemble-instrumentation
-        run: gradle :sample:minifyExternalStagingWithR8 validateL8 -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan --continue
+        run: ./gradlew :sample:minifyExternalStagingWithR8 validateL8 -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan --continue
         working-directory: samples
 
       - name: Enable KVM group perms
@@ -138,7 +130,7 @@ jobs:
             
             # Now proceed, with much of the build being cached up to this point
             echo "Running instrumentation tests"
-            gradle connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan
+            ./gradlew connectedExternalStagingAndroidTest -PagpVersion=${{ steps.agp-version-finder.outputs.resolved-version }} --scan
             
             adb uninstall com.slack.keeper.sample || true
             adb uninstall com.slack.keeper.sample.androidTest || true
