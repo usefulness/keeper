@@ -15,6 +15,7 @@
  */
 
 apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'java-test-fixtures'
 
 // This indexes fine in the IDE without this but fails to build. Super weird gradle behavior
 sourceSets {

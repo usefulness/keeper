@@ -16,4 +16,9 @@
 
 plugins {
     id 'org.jetbrains.kotlin.jvm'
+    id 'java-test-fixtures'
+}
+
+dependencies {
+    testFixturesImplementation testFixtures(project(":sample-libraries:c"))
 }
