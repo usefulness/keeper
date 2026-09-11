@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020. Slack Technologies, LLC
+ * Copyright (C) 2026. Slack Technologies, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.slack.keeper.sample
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.slack.keeper.example.a.AClass
-import org.junit.Test
-import org.junit.runner.RunWith
+package com.slack.keeper.example.c;
 
-@RunWith(AndroidJUnit4::class)
-class KeeperSampleTest {
-    @Test
-    fun testFunctionKept() {
-        AClass.sampleMethod()
-        TestOnlyCClassCaller.callCClass()
-        TestOnlyJvmFixtureCaller.callFixture()
-        TestOnlyClassCaller.callTestOnlyMethod()
-        TestOnlyKotlinClassCaller.callTestOnlyMethod()
+public class CTestFixture {
+    public static void sampleMethod() {
+        TestOnlyCClass.sampleMethod();
     }
 }

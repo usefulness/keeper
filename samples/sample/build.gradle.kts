@@ -187,6 +187,11 @@ tasks
                     "R8 configuration doesn't contain embedded library rules from androidTest. Full contents:\n$allConfigurations",
                 )
             }
+            if ("-keep class slack.test.only.TestFixtures { *; }" !in allConfigurations) {
+                throw IllegalStateException(
+                    "R8 configuration doesn't contain embedded test-fixtures rules from the androidTest runtime classpath. Full contents:\n$allConfigurations",
+                )
+            }
         }
     }
 
@@ -231,4 +236,5 @@ dependencies {
     androidTestImplementation(libs.truth)
     androidTestImplementation(project(":sample-libraries:test-only-android"))
     androidTestImplementation(project(":sample-libraries:test-only-jvm"))
+    androidTestImplementation(testFixtures(project(":sample-libraries:test-only-jvm")))
 }
