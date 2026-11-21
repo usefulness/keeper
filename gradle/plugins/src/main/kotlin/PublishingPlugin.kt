@@ -16,7 +16,7 @@ class PublishingPlugin : Plugin<Project> {
 
         pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
             tasks.named("processResources", ProcessResources::class.java) { processResources ->
-                processResources.from(rootProject.file("LICENSE.txt"))
+                processResources.from(isolated.rootProject.projectDirectory.file("LICENSE.txt"))
             }
 
             tasks.named { it == "javadocJar" }.withType(Jar::class.java).configureEach { javadocJar ->
