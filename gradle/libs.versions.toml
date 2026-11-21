@@ -1,7 +1,7 @@
 [versions]
 google-agp = "9.5.2"
 maven-kotlin = "2.4.21"
-gradle-starter = "0.99.0"
+gradle-starter = "0.100.0"
 java-compilation = "27"
 maven-vanniktech-publish = "0.37.0"
 maven-dokka = "2.3.0"
